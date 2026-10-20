@@ -1,135 +1,134 @@
 # Tech Context
 
-Fork of **Odoo 18.0 Community** (`odoo/release.py`: `version_info = (18, 0, 0, FINAL, 0, '')`), remote `github.com/DaKaZ/odoo`, branch `banyan`. The only fork-specific change is commit `8a9ce028 local docker setup` (`Dockerfile`, `docker-compose.yml`, `docker/odoo.conf`).
+Fork of **Odoo 18.0 Community** (`odoo/release.py`: `version_info = (18, 0, 0, FINAL, 0, '')`), remote `github.com/DaKaZ/odoo`, branch `banyan`. The only fork-specific change is commit `8a9ce028 local docker setup` (`Dockerfile`, `docker-compose.yml`, `docker/odoo.conf`). ~621 modules under `addons/`. Active dev database: `odoo-dev` with the Sales app (`sale_management`) installed.
 
 ## Technology Stack
 
-### Language & Runtime
-- **Python** — `setup.py` `python_requires='>=3.10'`; `odoo/__init__.py` `MIN_PY_VERSION=(3,10)`, `MAX_PY_VERSION=(3,14)`. Docker image: **Python 3.12** (`python:3.12-slim`).
-- **JavaScript** — native ES modules, transpiled server-side by `odoo/tools/js_transpiler.py`. No TypeScript, no npm build step.
-- **SCSS** — compiled server-side with libsass. **QWeb XML** templates on both server and client.
+| Layer | Technology | Version / Notes |
+|---|---|---|
+| Backend language | Python | Supported 3.10–3.14 (`odoo/__init__.py`); container runs **3.12** (`python:3.12-slim`) |
+| Backend framework | Odoo ORM + HTTP (Werkzeug) + QWeb server rendering | `odoo/` core, `odoo/addons/base`; entry `odoo-bin` |
+| Frontend framework | OWL (Odoo Web Library) | **2.8.2**, vendored `addons/web/static/lib/owl/owl.js` |
+| Templates / views | XML (QWeb, views, data) | `views/`, `data/`, `static/src/**/*.xml` per addon |
+| Styling | SCSS (libsass), Bootstrap; LESS + rtlcss for RTL | Bootstrap vendored in `addons/web/static/lib/bootstrap` |
+| Vendored JS libs | luxon, Chart.js, fullcalendar, jquery, dompurify, pdfjs, popper, prismjs, ace, zxing | `addons/web/static/lib/` (no root `package.json`) |
+| Python tests | `odoo.tests` (unittest-based) | TransactionCase, HttpCase, tours |
+| JS tests | **Hoot** (+ hoot-dom, hoot-mock), legacy QUnit | `*.test.js`; runner at `/web/tests` |
+| Linting | flake8 (`setup.cfg`); Odoo `test_lint` module (pylint/eslint checkers) | Lint tools not installed in the image |
+| Database | PostgreSQL **16** | psycopg2 2.9.9 |
+| File storage | Odoo filestore | `data_dir=/var/lib/odoo` (volume `odoo-filestore`) |
 
-### Backend Framework (in-house, `odoo/`)
-- **ORM**: `odoo/models.py`, `odoo/fields.py`, `odoo/api.py`, `odoo/osv/` (domain expressions).
-- **HTTP**: `odoo/http.py` on Werkzeug 3.0.1; controllers in each addon's `controllers/`.
-- **Server**: `odoo/service/server.py` — threaded / prefork / gevent modes; longpolling + websocket via gevent.
-- **DB access**: `odoo/sql_db.py` (psycopg2, connection pooling).
-- **CLI**: `odoo-bin` + `odoo/cli/` (server, shell, scaffold, …).
-- **Modules**: `odoo/modules/` (loader, registry, migrations); `odoo/upgrade/`, `odoo/upgrade_code/`.
+## Key Dependencies (requirements.txt, Python 3.12 pins)
 
-### Frontend (`addons/web/static/`)
-- **OWL 2.8.2** (`lib/owl/owl.js`) — Odoo's reactive component framework.
-- Bootstrap 5.3.3, Popper, Chart.js + Luxon, FullCalendar, DOMPurify, pdf.js, Prism, ACE, zxing, signature_pad; jQuery retained for legacy code.
-- **Asset bundling** is server-side: `odoo/addons/base/models/assetsbundle.py` + `ir_asset.py` consume each manifest's `assets` key (`web.assets_backend`, `web.assets_unit_tests`, …). rjsmin for JS, libsass for SCSS, rtlcss (global npm) for RTL.
+- **psycopg2 2.9.9** — PostgreSQL driver
+- **Werkzeug 3.0.1** — WSGI/HTTP under `odoo.http`
+- **lxml 5.2.1** (+ lxml-html-clean) — XML views/QWeb/data parsing, HTML cleaning
+- **Jinja2 3.1.2, MarkupSafe 2.1.5** — templating helpers
+- **Babel 2.10.3, polib, pytz** — i18n, `.po` files, timezones
+- **libsass 0.22.0, rjsmin** — SCSS compile, JS minify for asset bundles
+- **reportlab 4.1.0, PyPDF2 2.12.1, qrcode, Pillow 10.2.0** — PDF reports, barcodes, images. **wkhtmltopdf is NOT installed in the image** → QWeb PDF rendering limited.
+- **openpyxl, xlrd, XlsxWriter, xlwt** — spreadsheet import/export
+- **gevent 24.2.1 / greenlet 3.0.3** — longpolling/websocket (bus)
+- **cryptography, pyopenssl, passlib** — crypto, TLS, password hashing
+- **requests 2.31.0** — outbound HTTP (IAP, integrations)
+- **python-ldap, zeep, python-stdnum, num2words, freezegun** — LDAP auth, SOAP, number validation, amount-in-words, time freezing in tests
 
-### Testing Frameworks
-- **Python**: Odoo test runner `odoo/tests/` (`TransactionCase`, `HttpCase`, tours, `Form`, tag selector). `freezegun` for time.
-- **JS**: **HOOT** (`addons/web/static/lib/hoot`) — current; legacy **QUnit** retained. Tours run via HttpCase + headless Chrome.
-- **Lint**: `odoo/addons/test_lint` (pylint, eslint, manifest, pofile, SQL-injection, gettext checkers); `setup.cfg` `[flake8]`.
+## Build Tools & Packaging
 
-## Component Structure
+- **pip** from `requirements.txt` (Dockerfile). `setup.py` (setuptools; version from `odoo/release.py`).
+- **npm** (container only) installs `rtlcss` globally.
+- `setup/` (package builders for Debian/Fedora/Windows), `debian/` packaging, `.weblate.json` translations config.
 
-| Component | Path | Purpose |
-|-----------|------|---------|
-| Core framework | `odoo/` | ORM, HTTP, service, tools, CLI, module loader |
-| Base addon + framework tests | `odoo/addons/` | `base` plus ~28 `test_*` modules |
-| Business apps | `addons/` | **621** modules (each with `__manifest__.py`), incl. 120 `l10n_*` prefixes |
-| Entry point | `odoo-bin` | CLI launcher |
-| Packaging | `setup/`, `debian/`, `setup.py`, `MANIFEST.in` | deb/rpm/win32 packaging |
-| Local docker (fork) | `Dockerfile`, `docker-compose.yml`, `docker/odoo.conf` | Local dev environment |
+## Infrastructure & Local Environment
 
-## Key Dependencies (`requirements.txt`, pinned per Python version — 3.12 values)
+**Dockerfile** (`python:3.12-slim`, WORKDIR `/opt/odoo`): apt build deps (libxml2/libxslt/libldap/libsasl2/libssl/libjpeg/libpq/libffi/zlib dev headers), npm, node-less, xfonts, fontconfig; `npm i -g rtlcss`; `pip install -r requirements.txt` (cached layer); `COPY . .`; EXPOSE 8069; CMD `python odoo-bin -c /etc/odoo/odoo.conf`. No Chrome/Chromium.
 
-| Library | Purpose |
-|---|---|
-| psycopg2 2.9.9 | PostgreSQL driver |
-| Werkzeug 3.0.1 | WSGI / HTTP |
-| Jinja2 3.1.2, MarkupSafe 2.1.5 | Templating / escaping |
-| lxml 5.2.1 + lxml-html-clean | XML / QWeb views, HTML sanitizing |
-| gevent 24.2.1, greenlet 3.0.3 | Longpolling / websocket worker |
-| Babel, polib, pytz, python-dateutil | i18n, timezones |
-| libsass 0.22.0, rjsmin 1.2.0 | Asset compilation |
-| reportlab 4.1.0, PyPDF2 2.12.1, Pillow 10.2.0, qrcode | PDF reports, images |
-| openpyxl, xlrd, XlsxWriter, xlwt | Excel import/export |
-| cryptography, pyopenssl, passlib | Crypto, password hashing |
-| requests, urllib3, zeep | HTTP clients, SOAP |
-| python-ldap | `auth_ldap` |
-| freezegun | Testing |
+**docker-compose.yml**:
+- `db`: `postgres:16`, `POSTGRES_USER=odoo`, `POSTGRES_DB=postgres`, volume `pg-data`
+- `odoo`: local build, `depends_on: db`, `8069:8069`, `./docker/odoo.conf` → `/etc/odoo/odoo.conf:ro`, volume `odoo-filestore` → `/var/lib/odoo`, `PYTHONDONTWRITEBYTECODE=1`
+- `develop.watch`: `./addons` → `/opt/odoo/addons` (sync+restart), `./odoo` → `/opt/odoo/odoo` (sync+restart), `requirements.txt` → rebuild
 
-External runtime tools: **wkhtmltopdf** (PDF reports — *not* in the Docker image), **rtlcss** + **node-less** (installed).
+**Important**: source is **baked into the image** (`COPY . .`), not bind-mounted. Only `docker compose watch` syncs `./addons` and `./odoo` into the running container. `docker compose run` uses image-time code — prefer `exec` while watch is running, or rebuild.
 
-## Database & Storage
-- **PostgreSQL** (>10 supported; Docker uses **postgres:16**).
-- **Filestore** under `data_dir` (`/var/lib/odoo` in Docker) — `filestore/<dbname>/`; sessions also under `data_dir`.
+## Environment Configuration
 
-## Infrastructure (Local Docker)
+`docker/odoo.conf` (mounted read-only):
+- `addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons` — **no custom-addons path yet**
+- `data_dir = /var/lib/odoo`
+- `db_host = db`, `db_port = 5432`, `db_user = odoo`
+- `dev_mode = reload` (Python auto-reload; XML/data still needs `-u` or `dev_mode=xml`)
+- No `dbfilter`, `list_db`, `workers`, log options → threaded mode, DB manager enabled
+- **Secrets**: `admin_passwd` (master password) and `db_password` are trivial dev defaults committed in plain text; `POSTGRES_PASSWORD` inline in compose. Local use only — never reuse in a deployed environment.
+- DB `odoo-dev` is not created by compose; it was created at runtime (UI / CLI).
 
-- **`Dockerfile`**: `python:3.12-slim`; apt build deps (libxml2/xslt, ldap/sasl, ssl, jpeg, pq, ffi, zlib), `npm`, `node-less`, xfonts, `npm i -g rtlcss`; `WORKDIR /opt/odoo`; `pip install -r requirements.txt`; `COPY . .` (source baked in); `EXPOSE 8069`; `CMD python odoo-bin -c /etc/odoo/odoo.conf`. Gaps: no wkhtmltopdf, no Chromium, no `.dockerignore`, runs as root.
-- **`docker-compose.yml`**:
-  - `db` — `postgres:16`, `POSTGRES_USER/PASSWORD=odoo`, volume `pg-data`, no host port.
-  - `odoo` — built from `.`, port **8069:8069** (8072 websocket not exposed), `./docker/odoo.conf:/etc/odoo/odoo.conf:ro`, volume `odoo-filestore:/var/lib/odoo`, `PYTHONDONTWRITEBYTECODE=1`.
-  - `develop.watch` — `./addons` and `./odoo` sync+restart; `requirements.txt` → rebuild.
-- **`docker/odoo.conf`**: `addons_path=/opt/odoo/addons,/opt/odoo/odoo/addons`, `data_dir=/var/lib/odoo`, `db_host=db`, `db_user=odoo`, `dev_mode=reload`, no `db_name` (database manager at `/web/database/manager`). Dev-only credentials — never deploy.
+### Local requirements
+- Docker Desktop with Compose ≥ 2.22 (for `develop.watch`).
+- Non-docker: Python 3.10–3.13, `pip install -r requirements.txt`, local PostgreSQL, `npm i -g rtlcss`. Docker is the supported path.
 
 ## Development Commands
 
-### Docker (primary)
+### Stack lifecycle
 ```bash
-docker compose up --build            # build + start db + odoo → http://localhost:8069
-docker compose watch                 # live dev: sync addons/ + odoo/ and restart
+docker compose up -d --build        # build + start db and odoo
+docker compose watch                # dev loop: sync+restart on ./addons, ./odoo
+docker compose ps
 docker compose logs -f odoo
-docker compose exec odoo bash
-docker compose down                  # -v also drops pg-data + odoo-filestore volumes
+docker compose restart odoo
+docker compose down                 # stop (volumes kept)
+docker compose down -v              # DESTRUCTIVE: drops DB + filestore volumes
 ```
-Source is copied into the image (not bind-mounted): code changes reach the container only via `docker compose watch` or a rebuild.
 
-### Native
+### Shells / DB
 ```bash
-pip install -r requirements.txt
-python odoo-bin --addons-path=addons,odoo/addons -d <db> -r odoo -w odoo --db_host=localhost --dev=reload,qweb,xml
-python odoo-bin scaffold <module> <dir>
-python odoo-bin shell -d <db>
+docker compose exec odoo bash                                    # WORKDIR /opt/odoo
+docker compose exec db psql -U odoo -d odoo-dev
+docker compose exec odoo python odoo-bin shell -c /etc/odoo/odoo.conf -d odoo-dev --no-http
 ```
 
-### Testing
-Tests need a throwaway database; always pass `--stop-after-init`.
+### Install / upgrade modules
+The main server already listens on 8069 in the container — a second `odoo-bin` via `exec` needs `--no-http` or another `--http-port`.
 ```bash
-# install + test a module inside the container
-docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d test_db \
-  -i <module> --test-enable --stop-after-init --log-level=test
-
-# upgrade existing db, run only selected tests
-... -d test_db -u <module> --test-tags /<module> --stop-after-init
-
-# tag syntax: [-][tag][/module][:Class][.method]
---test-tags /sale:TestSaleOrder.test_x
---test-tags post_install,-at_install
---test-tags /web.test_js             # JS suite via headless Chrome (needs Chromium — not in image)
---test-file path/to/test.py
+docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-dev -i <module> --stop-after-init --no-http
+docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-dev -u <module> --stop-after-init --no-http
+docker compose restart odoo
 ```
-- JS unit tests in browser: run server in dev mode, log in, open `http://localhost:8069/web/tests` (HOOT); legacy QUnit at `/web/tests/legacy`.
-- Lint: `python odoo-bin -d test_db -i test_lint --test-tags /test_lint --stop-after-init`
+Browser alternatives: Apps → Upgrade; developer mode at `http://localhost:8069/web?debug=1`.
 
-### Linting / Formatting
-- **Python**: `setup.cfg` `[flake8]`; canonical checks are the pylint tests in `test_lint`. No ruff/pyproject.
-- **JS**: tooling in `addons/web/tooling/` (ESLint + Prettier: 4-space, double quotes, width 100).
-  ```bash
-  bash addons/web/tooling/enable.sh    # installs root package.json/eslint config + lint-staged pre-commit hook
-  npm run lint-diff | npm run format-diff | npm run lint-all
-  bash addons/web/tooling/disable.sh
-  ```
+### Python tests
+`--test-tags` syntax: `[-][tag][/module][:Class][.method]`. HttpCase/tour tests need HTTP → use a free port.
+```bash
+docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-test -i <module> \
+  --test-enable --test-tags /<module> --stop-after-init --http-port=8070 --log-level=test
+#   ... --test-tags /<module>:TestClassName
+#   ... --test-tags /<module>:TestClassName.test_method
+#   ... --test-tags post_install/<module>
+```
+Prefer a throwaway DB (`odoo-test`) over `odoo-dev` for test runs.
 
-## Test Strategy
-- Python: `TransactionCase` (rolled-back per test) for unit/ORM logic; `HttpCase` for controllers and tours; `@tagged('post_install', '-at_install')` for tests that need all modules loaded.
-- JS: HOOT unit tests in `static/tests/*.test.js`; tours for end-to-end UI flows.
-- Run the narrowest scope possible: `-u <module> --test-tags /<module>` against a disposable DB. Full-suite runs across 621 addons are impractical locally.
-- Known environment gaps: no Chromium (tours/`test_js` cannot run in the container), no wkhtmltopdf (PDF reports render as HTML).
+### JS unit tests (Hoot)
+- Specs: `addons/*/static/tests/**/*.test.js`; helpers `addons/web/static/tests/web_test_helpers.js`.
+- Interactive: log in as admin → `http://localhost:8069/web/tests` (legacy QUnit at `/web/tests/legacy`).
+- Headless via `addons/web/tests/test_js.py` (`WebSuite.test_unit_desktop`) — **requires Chrome, which the image lacks**; tours and headless Hoot tests skip/fail in the container.
+
+### Lint
+```bash
+docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-test -i test_lint \
+  --test-enable --test-tags /test_lint --stop-after-init --no-http
+```
+pylint/eslint are not installed in the image; corresponding checks skip.
+
+## Linting & Conventions
+
+- `setup.cfg` `[flake8]` (excludes `.git, .tx, debian, doc, setup`; RST docstring checks). No ruff / pyproject / pylintrc / prettier / editorconfig.
+- `odoo/addons/test_lint`: pylint with Odoo checkers (SQL injection, gettext, unlink override), eslint (ES2022 modules), manifest/i18n/route/override-signature checks.
+- `CONTRIBUTING.md` → Odoo wiki; PR template at `.github/PULL_REQUEST_TEMPLATE.md`.
+- Conventions: `_()` / `self.env._()` for translatable strings; never format SQL strings (use `SQL()`); tests in `<module>/tests/test_*.py` imported in `tests/__init__.py`; HttpCase tagged `post_install, -at_install`.
 
 ## CI/CD
-- `.github/` contains only `PULL_REQUEST_TEMPLATE.md` and `ISSUE_TEMPLATE/` — **no workflows**. Upstream Odoo uses its own runbot (not in repo). All tests/lint are run manually.
-- `.weblate.json` — translation config inherited from upstream.
 
-## Coding Conventions
-- Commit format (Odoo standard): `[TAG] module: short summary` (≤50 chars), blank line, body explaining *why*. Tags: `[FIX] [REF] [ADD] [REM] [REV] [MOV] [REL] [IMP] [MERGE] [CLA] [I18N] [PERF]`.
-- Python: PEP8 + Odoo pylint rules — no SQL string formatting (use `SQL()`), `_()`/`_lt` only with literal strings, call `super()` in overrides.
-- Contribution guidelines: `CONTRIBUTING.md` → https://github.com/odoo/odoo/wiki/Contributing.
+- **No CI workflows** — `.github/` has only the upstream PR template and issue templates (upstream uses runbot).
+- Any CI for `banyan` (flake8, Python tests, Hoot) must be added. No build/deploy pipeline.
+
+## UAT
+
+- Config: `memory-bank/uat-config.md` — dev URL `http://localhost:8069`, auth token+fallback via `/web/login`, personas admin / user / portal / salesman / warehouse.

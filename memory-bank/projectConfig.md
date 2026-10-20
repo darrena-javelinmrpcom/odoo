@@ -40,3 +40,14 @@ backends:
 team:
   # <git-email>: <friendly first name> — self-populating; see
   # context/branch-routing.md § Team Roster. Do not collect the full team here.
+  darrena@javelin-mrp.com: darrena-javelinmrpcom
+
+## UAT
+
+Project-wide defaults for `/bmb:uat`. Edit freely — these are read at the start of every UAT run. Infra/secrets live in `memory-bank/uat-config.md`.
+
+- **default_sections**: happy,mobile         # happy | mobile | negatives | errors | all
+- **default_skip_ux_check**: false
+- **default_environment**: dev                # environments[*].name in uat-config.md
+- **artifact_git_policy**: ignore             # ignore | commit
+- **uat_required_for_archive**: false

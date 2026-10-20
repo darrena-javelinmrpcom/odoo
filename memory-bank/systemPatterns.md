@@ -1,127 +1,119 @@
 # System Patterns
 
-Odoo **18.0 Community** (LGPL-3) fork. 621 addon directories under `addons/`; framework core under `odoo/`. Fork-specific additions are limited to `Dockerfile`, `docker-compose.yml`, `docker/odoo.conf`.
+Odoo **18.0 Community** (LGPL-3) fork. 621 addon directories under `addons/`; framework core under `odoo/`. Fork-specific additions are limited to `Dockerfile`, `docker-compose.yml`, `docker/odoo.conf`. No custom addons exist yet.
 
 ## Guiding Principles
 
-| Principle | Description |
+| Principle | Rule / Evidence |
 |---|---|
-| Modular addons | Every feature is an installable module with explicit `depends` in `__manifest__.py`; `odoo/modules/graph.py` + `loading.py` load in dependency order. |
-| Extend, don't modify | Models via `_inherit`, views via XPath `inherit_id`, JS via `patch()` + registries, controllers via subclassing. Keep core/upstream files untouched so upstream merges stay clean. |
-| Declarative data | Views, menus, actions, security, crons, sequences are XML/CSV listed in the manifest `data` key (security first, menus last), loaded by `odoo/tools/convert.py`. |
-| Layered security | Model ACLs (`security/ir.model.access.csv`), groups (`res_groups.xml`), record rules (`ir_rules.xml`), field `groups=`, `auth=` on routes. Every new model needs an ACL row. |
-| i18n everywhere | User-facing strings via `_()` (Python, literal strings only) / `_t()` (JS); per-module `i18n/<module>.pot` + `.po`. |
-| ORM-first data access | Logic runs on recordsets through the Environment. Raw SQL only via `odoo.tools.SQL` — never string-formatted SQL. |
-| Licensing | LGPL-3; files carry the "Part of Odoo. See LICENSE file for full copyright and licensing details." header. |
-| Tests ship with code | Each module has `tests/` (Python) and `static/tests/` (HOOT + tours). |
+| Never modify core | Don't edit `odoo/` or `addons/*`. Extend via `_inherit` (models), `inherit_id` + `<xpath>` (views), asset patching (JS) in a separate custom module — keeps upstream merges clean. |
+| Declare every dependency | `__manifest__.py` `depends` (e.g. sale: `['sales_team','account_payment','utm']`); load order from the dependency graph (`odoo/modules/graph.py`). |
+| Every model gets access rights | `security/ir.model.access.csv` (`id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink`), listed first in manifest `data`. |
+| Row-level isolation via record rules | `security/ir_rules.xml` `ir.rule` with `domain_force` — multi-company `[('company_id','in',company_ids)]`, portal follower rules. |
+| Groups defined in XML | `security/res_groups.xml`, loaded before rules and views. |
+| Manifest `data` order matters | security → reports → data → wizards → views → menus (last). |
+| Translatable strings | `_()` / `_lt()` / `self.env._()`; `i18n/*.po` + `<module>.pot` per module. |
+| No string-formatted SQL | Use `odoo.tools.SQL()`; enforced by `test_lint` SQL-injection checker. |
+| External IDs everywhere | XML records carry `id=`; cross-module refs use `module.xml_id`. |
+| License | `'license': 'LGPL-3'` in each manifest; "Part of Odoo" header. |
+| Tests ship with the module | `tests/` (Python), `static/tests/` (Hoot unit tests + tours). |
 
 ## Architecture Overview
 
-Monolithic Python WSGI server on PostgreSQL:
-
-- **Entry**: `odoo-bin` → `odoo.cli.main()` → subcommand in `odoo/cli/` (server, shell, scaffold, db, populate, neutralize, upgrade_code, …).
-- **Request flow**: `odoo/http.py` `Application` → `Request` → `HttpDispatcher` (`type='http'`) or `JsonRPCDispatcher` (`type='json'`) → `@route` endpoint on a `Controller` subclass, executing against `request.env`.
-- **Registry**: `odoo/modules/registry.py` — one model registry per database, built from the installed-module dependency graph.
-- **Web client**: `addons/web` — OWL 2 SPA talking to the server mainly via `/web/dataset/call_kw` (JSON-RPC ORM calls) through `orm` / `rpc` services.
-- **External API**: XML-RPC `/xmlrpc/2/{common,object,db}` and JSON-RPC `/jsonrpc` (`odoo/addons/base/controllers/rpc.py`), backed by `odoo/service/{common,db,model,security}.py`.
-- **Server modes**: threaded (default), prefork (`--workers`), gevent for longpolling/websocket (`odoo/service/server.py`).
+- **Entry point**: `odoo-bin` → `odoo.cli.main()` (`odoo/cli/command.py`). Subcommands in `odoo/cli/`: `server` (default), `shell`, `scaffold`, `db`, `populate`, `neutralize`, `obfuscate`, `upgrade_code`, `cloc`, `start`, `deploy`, `tsconfig`.
+- **Bootstrap**: `odoo/cli/server.py` parses config (`odoo/tools/config.py`) and starts `odoo/service/server.py` (threaded / prefork / gevent).
+- **Module loading**: `odoo/modules/registry.py` (per-database registry), `loading.py` (install/update, data files), `graph.py` (dependency order), `migration.py` (version migration scripts), `module.py` (manifests).
+- **Core**: `odoo/models.py` (ORM: BaseModel, Model, TransientModel, AbstractModel), `fields.py`, `api.py` (Environment, `depends`/`onchange`/`constrains`/`model_create_multi`), `http.py` (WSGI, `route`, Request, sessions), `sql_db.py`, `osv/expression.py` (domains), `tools/`, `exceptions.py`, `service/` (RPC services).
+- **`odoo/addons/base`**: core data model (`ir.*`, `res.*`, users, groups, `ir.rule`, `ir.model.access`); `odoo/addons/test_*` are framework test modules.
+- **Web client**: `addons/web` — OWL assets (`static/src`), Hoot framework, controllers (`dataset.py`, `action.py`, `view.py`, `session.py`, `home.py`, `binary.py`, `export.py`, `report.py`, `json.py`).
+- **Runtime**: docker compose — `postgres:16` + `odoo` (python:3.12-slim) on 8069; `docker/odoo.conf` with `dev_mode = reload`; `develop.watch` syncs `./addons` and `./odoo`.
 
 ## Directory Structure
 
 ```
-odoo-bin                  Launcher
-odoo/                     Framework core (18.0: no odoo/orm/ package yet)
-  models.py               BaseModel / Model / TransientModel / AbstractModel, recordset ops
-  fields.py               Field types, Command (x2many)
-  api.py                  Environment, decorators
-  http.py                 Controller, route, Request, Dispatchers, Application
-  sql_db.py               psycopg2 cursor + pooling
-  exceptions.py           UserError, ValidationError, AccessError, …
-  osv/expression.py       Domain → SQL
-  cli/                    CLI subcommands (+ templates for scaffold)
-  service/                server.py + RPC services
-  modules/                manifest, graph, loading, registry, migration, neutralize
-  tools/                  config, convert, translate, safe_eval, sql, misc, float_utils, js_transpiler, …
-  tests/                  Test framework (common.py, case.py, form.py, loader.py, tag_selector.py)
-  addons/base/            base module (res.*, ir.*)
-  addons/test_*/          ~28 framework self-test modules (test_new_api, test_http, test_inherit, test_lint, …)
-  upgrade_code/           Source-rewrite scripts
-addons/                   621 modules (web, mail, account, sale, stock, mrp, website, l10n_*, …)
-setup/, debian/           Packaging
-docker/odoo.conf          Fork dev config
-doc/cla/                  Contributor License Agreements
+odoo-bin                 entry script
+odoo/                    framework: models.py fields.py api.py http.py sql_db.py cli/ modules/ service/ tools/ osv/ tests/
+odoo/addons/base         base module (+ odoo/addons/test_* framework test modules)
+addons/                  621 standard modules (sale, sale_management, sales_team, web, account, stock, …)
+docker/odoo.conf         addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons  (no custom path yet)
+debian/, setup/, doc/    packaging & docs
+memory-bank/             Banyan project memory
 ```
 
 ## Key Patterns
 
-### Module Anatomy (reference: `addons/sale`)
-- `__manifest__.py`: name, version, category, `depends`, `data` (ordered), `assets`, `license`.
-- `__init__.py` imports `models`, `controllers`, `wizard`, `report`.
-- `models/` — one file per model or extended model (`sale_order.py`, `res_partner.py`).
-- `wizard/` — TransientModels + views. `report/` — SQL-view models + QWeb reports.
-- `controllers/` — `http.Controller` subclasses.
-- `views/*_views.xml`, `*_menus.xml`; `security/`; `data/` (crons, sequences, mail templates); `demo/`.
-- `static/src/{js,xml,scss,views,img}`; `static/tests/` (`*.test.js`, `mock_server/`, `tours/`).
-- `i18n/*.po` + `<module>.pot`. Optional `migrations/<version>/{pre,post,end}-*.py`.
+### API surface
+- Controllers subclass `http.Controller`; `@http.route(path, type='http'|'json', auth='user'|'public'|'none', methods=…, csrf=…, readonly=…)`.
+- Web client JSON-RPC: `/web/dataset/call_kw[/<path>]`, `/web/dataset/call_button` (`addons/web/controllers/dataset.py`).
+- External RPC: `/xmlrpc/<service>`, `/xmlrpc/2/<service>`, `/jsonrpc` (`odoo/addons/base/controllers/rpc.py`).
+- **No JSON-2 (`/json/2`) API in 18.0** (arrives in 19). `/json/<path>` is a readonly browser JSON view.
 
-### ORM Inheritance
-- **New model**: `_name = 'x.y'`, `_description`, optional mixins `_inherit = ['mail.thread', 'mail.activity.mixin', 'portal.mixin', …]`.
-- **Extension (in place)**: `_inherit = 'res.partner'` without `_name`; chain `super()`.
-- **Delegation**: `_inherits = {'parent.model': 'fk_field'}`.
-- **Types**: `models.Model`, `TransientModel` (wizards), `AbstractModel` (mixins).
-- **Decorators**: `@api.depends`, `@api.constrains`, `@api.onchange`, `@api.model`, `@api.model_create_multi`, `@api.ondelete`.
-- **Recordsets**: iterate `for rec in self`; `env['model']`, `env.ref('xmlid')`, `with_context` / `with_company` / `sudo()`; `Command.create/link/set` for x2many; domains as tuple lists.
+### Models
+- `class SaleOrder(models.Model): _name = 'sale.order'; _inherit = ['portal.mixin', 'mail.thread', 'mail.activity.mixin', 'utm.mixin', …]` — mixins via `_inherit` list.
+- Extension: class with `_inherit = 'res.partner'` and no `_name`. Delegation via `_inherits`.
+- `AbstractModel` for mixins/report models; `TransientModel` for wizards.
+- Business logic in computed fields (`@api.depends`), `@api.constrains`, `@api.onchange`.
 
-### HTTP Controllers
-`@http.route('/path/<int:id>', type='http'|'json', auth='user'|'public'|'none', methods=[...], website=True)` on `Controller` subclasses. Extend existing controllers by subclassing (e.g. `CustomerPortal(payment_portal.PaymentPortal)`). JSON routes use JSON-RPC 2.0 envelopes.
+### Views & data
+- XML `ir.ui.view` (form/list/kanban/search), `ir.actions.*`, `menuitem`; inheritance via `inherit_id` + `<xpath>`.
+- QWeb for reports and portal templates.
+- `data/` XML for crons, sequences, mail templates, config parameters; demo data under manifest `demo`.
 
-### Frontend
-- ES modules with `/** @odoo-module **/`; imports `@web/...`, `@odoo/owl`, `@<module>/...`.
-- OWL components paired with XML QWeb templates; registration via `registry.category(...)`; services via `useService`.
-- Assets declared in manifest `assets` (`web.assets_backend`, `web.assets_frontend`, `web.assets_unit_tests`, …).
-- Vendored libs in `addons/web/static/lib` (owl, hoot, luxon, bootstrap, Chart, fullcalendar, legacy qunit).
-
-### Shared Utilities
-- Python: `odoo.tools` (`float_compare`/`float_round`, `format_date`, html helpers, `SQL`, `safe_eval`, `ormcache`).
-- Shared models: `base` (res.partner, res.users, res.company, ir.*); mixins `mail.thread`, `portal.mixin`, `utm.mixin`.
-- JS: `@web/core/*` (registry, `_t`, rpc, orm service, hooks, dialogs).
+### Frontend assets
+- Declared in manifest `assets` (`web.assets_backend`, `web.assets_frontend`, `web.assets_tests`, `web.assets_unit_tests`).
+- ES modules importing `@web/…` / `@<module>/…`; registration via `registry.category(...)`; OWL components paired with `.xml` templates.
 
 ## Code Organization Patterns
 
-- **Languages**: Python 3 (backend), JavaScript ES modules (frontend), XML (views/data/QWeb), SCSS, CSV.
-- **TypeScript is not used** for new files (`odoo/cli/tsconfig.py` only generates an IDE `tsconfig.json`). No type-check gate.
-- **New module shape**: `python odoo-bin scaffold <name> <dir>` → `__manifest__.py`, `__init__.py`, `models/`, `views/`, `security/ir.model.access.csv`, `controllers/`, `demo/`; add `tests/` (imported in `tests/__init__.py`) and `static/src` as needed. Custom modules go in `addons/` or a separate directory appended to `addons_path`.
+- **Primary languages**: Python (backend), JavaScript ES modules (OWL frontend), XML (views/data/templates), SCSS (styles), CSV (ACLs).
+- `.js` is the standard frontend extension (no TypeScript); no build step — assets bundled at runtime.
+- `git ls-files addons/sale` extension counts: py 66, po 63, xml 52, js 45, scss 10, csv 1, pot 1.
 
-| Directory / role | Default extension(s) |
-|---|---|
-| `__manifest__.py`, `__init__.py` | `.py` |
-| `models/`, `wizard/`, `report/` (logic) | `.py` |
-| `controllers/` | `.py` |
-| `views/`, `wizard/*_views.xml`, `report/*.xml` | `.xml` |
-| `security/` | `ir.model.access.csv` + `.xml` |
-| `data/`, `demo/` | `.xml` (occasionally `.csv`) |
-| `i18n/` | `.po`, `.pot` |
-| `static/src/**` | `.js` + `.xml` (templates) + `.scss` |
-| `static/description` | `.png` / `.svg`, `index.html` |
-| `tests/` | `test_*.py`, `common.py` |
-| `static/tests/` | `*.test.js` (legacy `*_tests.js` exist) |
-| `static/tests/tours/` | `*.js` |
-| `static/tests/mock_server/` | `.js` |
-| `migrations/<ver>/` | `pre-*.py`, `post-*.py` |
+| Directory | Dominant extension(s) | Notes |
+|---|---|---|
+| `__manifest__.py`, `__init__.py` | .py | Manifest dict; `__init__` imports `models`, `controllers`, `wizard`, `report` |
+| `models/` | .py | One file per model / inherited model |
+| `views/` | .xml | `<model>_views.xml`, `*_menus.xml`, portal templates |
+| `security/` | .csv + .xml | `ir.model.access.csv`, `res_groups.xml`, `ir_rules.xml` |
+| `data/` | .xml | Crons, sequences, mail templates, demo |
+| `controllers/` | .py | `http.Controller` subclasses |
+| `wizard/` | .py + .xml | TransientModel + `*_views.xml` |
+| `report/` | .py + .xml | SQL-view report models + QWeb templates |
+| `static/src/js/<component>/` | .js + .xml (OWL) + .scss | One folder per component / field widget |
+| `static/tests/` | `*.test.js` (Hoot), `tours/*.js`, `mock_server/mock_models/*.js` | Legacy `*_tests.js` = QUnit |
+| `tests/` | .py | `test_*.py`, `common.py` fixtures |
+| `i18n/` | .po + .pot | |
+
+### New custom module shape
+No custom addons exist yet. Recommended:
+1. Create top-level `custom_addons/`.
+2. Add `/opt/odoo/custom_addons` to `addons_path` in `docker/odoo.conf`.
+3. Add a `develop.watch` sync+restart entry for `./custom_addons` in `docker-compose.yml` (`COPY . .` already includes it in the image).
+4. Scaffold: `docker compose exec odoo python odoo-bin scaffold <name> custom_addons/` (then copy out / sync).
+5. Module contents: `__manifest__.py` (`depends`, `data` with security first and menus last, `assets`, `license: 'LGPL-3'`, `installable: True`), `models/`, `views/`, `security/ir.model.access.csv` (+ `ir_rules.xml`), `data/`, `controllers/`, `wizard/`, `static/src/`, `static/tests/`, `tests/`, `i18n/`.
 
 ## Testing Patterns
 
-- **Location**: Python tests in `<module>/tests/`; every `test_*.py` **must** be imported in `tests/__init__.py` or it won't run. JS tests in `<module>/static/tests/`.
-- **File mapping**: feature/flow-based test files (e.g. `test_sale_flow.py`, `test_access_rights.py`), not one-per-source-file.
-- **Naming**: `test_*.py`; JS `*.test.js`.
-- **Grouping**: `TransactionCase` classes grouped by business scenario; methods `test_<behaviour>`.
-- **Nesting**: shallow — one class level.
-- **Setup sharing**: heavy `setUpClass` with `cls.env`; shared fixtures in `tests/common.py` (e.g. `TestSaleCommonBase` on `AccountTestInvoicingCommon`).
-- **Framework & assertions**: Odoo test runner on `unittest` — `TransactionCase` (savepoint rollback per test), `SingleTransactionCase`, `HttpCase` (live server + headless Chrome, `url_open`, `start_tour`), `Form` (onchange simulation). JS: HOOT (`test`, `expect`) + `@web/../tests/web_test_helpers` (`mountView`, `contains`, `defineModels`, `onRpc`).
-- **Tags**: `@tagged('post_install', '-at_install')` dominant for flow/HttpCase/tour tests; `at_install` default; custom tags allowed (`'-standard', 'external'`).
-- **Mocking**: `unittest.mock.patch`, `self.patch(...)`, `freeze_time`, `mute_logger`, `assertQueryCount`, `with_user`; JS `mock_server` models + `onRpc`.
-- **Scope**: integration-heavy against real PostgreSQL (business flows, access rights, controllers, reports); few pure unit tests; tours for E2E UI.
-- **Ratio**: `sale` ≈ 1.15:1 test LOC to source LOC (~9.3k vs ~8.1k), 28 test modules + 7 tours.
-- **Not tested**: vendored JS libs; packaging (`setup/`, `debian/`); the fork's Docker setup.
-- **Run**: `python odoo-bin -d testdb -u <mod> --test-tags /<mod> --stop-after-init` (throwaway DB; `--test-tags` implies `--test-enable`). Docker: `docker compose run --rm odoo python odoo-bin -c /etc/odoo/odoo.conf -d test -i <mod> --test-tags /<mod> --stop-after-init`.
-- **Reference examples**: `odoo/addons/test_*` (test_new_api, test_http, test_inherit, test_performance).
+a. **Location**: Python tests in `<module>/tests/`, imported in `tests/__init__.py`; JS in `<module>/static/tests/`. Framework tests in `odoo/tests/` and `odoo/addons/test_*`.
+
+b. **File mapping / naming**: `test_<feature>.py` with `Test<Feature>` classes — feature-based, not one-per-source-file. Shared fixtures in `tests/common.py` (e.g. `SaleCommon`, `TestSaleCommon`). JS: `*.test.js` (Hoot), tours in `static/tests/tours/*.js`.
+
+c. **Base classes**: `TransactionCase` (each test rolled back), `HttpCase` (browser, `url_open`, `start_tour`), domain bases (`AccountTestInvoicingCommon`, `BaseUsersCommon`, `MailCommon`, `HttpCaseWithUserPortal`, `PaymentHttpCommon`), combined via multiple inheritance.
+
+d. **Grouping**: by behaviour/business scenario within a feature class; shallow (class → test methods).
+
+e. **Tagging**: `@tagged('post_install', '-at_install')` is ubiquitous; custom tags select via `--test-tags`.
+
+f. **Setup sharing**: `@classmethod setUpClass(cls)` builds records once per class via `cls.env[...]` / `cls.env.ref(...)`; test users created with group xml-ids.
+
+g. **UI tours**: `registry.category("web_tour.tours").add(name, {steps})`; run from Python with `self.start_tour("/odoo", "tour_name", login="admin")`; assets in `web.assets_tests`.
+
+h. **Mocking**: Hoot mock server + mock models for JS; Python relies on real ORM in a rolled-back transaction, `freezegun`, `patch`/`mute_logger` helpers.
+
+i. **Scope emphasis**: integration-heavy (ORM + DB in TransactionCase); tours for UI flows; Hoot unit tests for widgets.
+
+j. **Ratio (addons/sale)**: 28 test files, ~9,340 test lines vs ~7,940 source py lines (~1.2:1). JS: 4 unit/helper + 7 tours + 4 mock models vs 44 src JS files.
+
+k. **Not tested much**: `.po` content, pure view XML layout (validated at install via RNG only), SCSS, demo data (load-only), most crons and mail templates. No coverage tooling; no CI in the fork. Chrome is not in the docker image, so tours/headless Hoot can't run in-container.
+
+**Running**: see `techContext.md` § Development Commands (`--test-enable --test-tags /<module>[:Class.method]`, separate `odoo-test` DB, `--http-port=8070` when the main server is running).
