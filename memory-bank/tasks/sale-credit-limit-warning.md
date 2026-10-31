@@ -1,13 +1,13 @@
 ---
 slug: sale-credit-limit-warning
 feature: sale-credit-limit-warning
-status: BUILD_COMPLETE
+status: UAT_PASS
 ---
 
 # sale-credit-limit-warning: Customer Credit Limit Warning
 
 **Complexity**: Level 2 (inherited from sale-credit-limit-warning)
-**Status**: BUILD_COMPLETE
+**Status**: UAT_PASS
 **Roadmap**: sale-credit-limit-warning
 **Branch**: feature/sale-credit-limit-warning
 **Worktree**: N/A (primary checkout — `docker compose up --watch` syncs `./addons` from here)
@@ -233,8 +233,12 @@ Specification is concrete — proceed to implementation planning. The only items
 
 ## Execution State
 
-**Build Status**: BUILD_COMPLETE (Phase 2 of 2 complete)
-**Current Phase**: BUILD
+**Build Status**: IDLE
+**Current Phase**: UAT (PASS)
+**Can Resume**: NO
+**UAT Journey**: memory-bank/creative/sale-credit-limit-warning-credit-banner-user-journey.md
+**UAT Report**: memory-bank/uat/uat-sale-credit-limit-warning.md (run uat-20261031-a7c3, PASS_WITH_RECOMMENDATIONS — Required=0 Recommended=1 Optional=0; sections happy,mobile; --skip-ux-check)
+**E2E Spec**: memory-bank/uat/spec-sale-credit-limit-warning-e2e.md (target: Odoo HttpCase + web_tour; Chrome missing from image — see spec OI-1)
 **Last Completed**: Phase 2 (2026-10-31) - inherited form view, 14 addon tests + core TestSaleOrderCreditLimit (7) green, installed in odoo-dev, docs updated; review APPROVED (whole feature diff)
 **Earlier**: Phase 1 (2026-10-31) - infra + addon skeleton + compute fields
 **Can Resume**: NO

@@ -53,3 +53,6 @@ package.json
 
 # Banyan Memory Bank advisory cache (never synced)
 memory-bank/.local/
+
+# Banyan UAT run artifacts (screenshots may contain test-account PII; artifact_git_policy: ignore)
+memory-bank/uat/artifacts/
