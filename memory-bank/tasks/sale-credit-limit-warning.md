@@ -10,6 +10,8 @@ status: COMPLETE
 **Status**: COMPLETE
 **Archived**: memory-bank/archive/sale-credit-limit-warning-archive.md
 **Completed**: 2026-10-31
+**PR Created**: YES
+**PR URL**: https://github.com/darrena-javelinmrpcom/odoo/pull/1
 **Reflection**: memory-bank/reflection/sale-credit-limit-warning-reflection.md
 **Roadmap**: sale-credit-limit-warning
 **Branch**: feature/sale-credit-limit-warning
