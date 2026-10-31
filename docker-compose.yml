@@ -27,6 +27,9 @@ services:
           path: ./addons
           target: /opt/odoo/addons
         - action: sync+restart
+          path: ./custom_addons
+          target: /opt/odoo/custom_addons
+        - action: sync+restart
           path: ./odoo
           target: /opt/odoo/odoo
         - action: rebuild
