@@ -8,6 +8,11 @@
     'data': [
         'views/sale_order_views.xml',
     ],
+    'assets': {
+        'web.assets_tests': [
+            'sale_credit_limit_warning/static/tests/tours/**/*',
+        ],
+    },
     'license': 'LGPL-3',
     'installable': True,
     'auto_install': False,

@@ -41,7 +41,7 @@ Fork of **Odoo 18.0 Community** (`odoo/release.py`: `version_info = (18, 0, 0, F
 
 ## Infrastructure & Local Environment
 
-**Dockerfile** (`python:3.12-slim`, WORKDIR `/opt/odoo`): apt build deps (libxml2/libxslt/libldap/libsasl2/libssl/libjpeg/libpq/libffi/zlib dev headers), npm, node-less, xfonts, fontconfig; `npm i -g rtlcss`; `pip install -r requirements.txt` (cached layer); `COPY . .`; EXPOSE 8069; CMD `python odoo-bin -c /etc/odoo/odoo.conf`. No Chrome/Chromium.
+**Dockerfile** (`python:3.12-slim`, WORKDIR `/opt/odoo`): apt build deps (libxml2/libxslt/libldap/libsasl2/libssl/libjpeg/libpq/libffi/zlib dev headers), npm, node-less, xfonts, fontconfig; `npm i -g rtlcss`; `pip install -r requirements.txt` (cached layer); `COPY . .`; `chromium` (apt, for HttpCase browser tours); `pip install websocket-client` (required by the Chrome test runner); EXPOSE 8069; CMD `python odoo-bin -c /etc/odoo/odoo.conf`.
 
 **docker-compose.yml**:
 - `db`: `postgres:16`, `POSTGRES_USER=odoo`, `POSTGRES_DB=postgres`, volume `pg-data`
@@ -118,7 +118,7 @@ docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-test -u 
 ### JS unit tests (Hoot)
 - Specs: `addons/*/static/tests/**/*.test.js`; helpers `addons/web/static/tests/web_test_helpers.js`.
 - Interactive: log in as admin → `http://localhost:8069/web/tests` (legacy QUnit at `/web/tests/legacy`).
-- Headless via `addons/web/tests/test_js.py` (`WebSuite.test_unit_desktop`) — **requires Chrome, which the image lacks**; tours and headless Hoot tests skip/fail in the container.
+- Headless via `addons/web/tests/test_js.py` (`WebSuite.test_unit_desktop`) — needs Chrome: the image now ships Chromium + websocket-client, so tours (e.g. `sale_credit_limit_warning` `credit_banner_happy`) and headless Hoot tests can run in the container. After editing an addon on the host, `docker cp` it into the container (or rebuild) before running tests; a first run on a fresh DB generates assets and may be OOM-killed (exit 137): just re-run.
 
 ### Lint
 ```bash

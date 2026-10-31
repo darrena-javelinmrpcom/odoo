@@ -151,6 +151,8 @@ No network request was confirmed as a settle condition. The walkers recorded no 
 
 ## Open Items (resolve before or during /bmb:build)
 
+**Build resolution (Phase 3, 2026-10-31)**: OI-1 resolved (Chromium + websocket-client added to the Dockerfile; HttpCase tour runs in the container). OI-2 ACCEPTED GAP: Scenario 2 (mobile 375x667) deferred, not implemented (UAT-REC-01). OI-4 resolved: switch is `res.company.account_use_credit_limit`, fixture sets it in `setUpClass`. Scenario 1 implemented and green. Selector correction: the layout assertion compares the banner against `.o_form_statusbar` and `.o_form_sheet` (the sheet itself); `.o_form_sheet_bg` wraps the status bar and banners as well, so it is not the sheet. Scenarios N1, N2, E1, E2 and OI-3/OI-5 remain not implemented.
+
 - **OI-1 (framework)**: Chrome is missing from the container image. Decide between adding Chrome to the test image or using the external Playwright harness. Until then the tours cannot run in the container.
 - **OI-2 (mobile)**: 375×667 was not reached in the UAT walk (UAT-REC-01, Recommended, confidence high). Scenario 2 is specified at 375×667 but unverified. Re-run mobile with device emulation to close it.
 - **OI-3 (negatives and errors)**: Scenarios for N1, N2, E1, E2 are not emitted (not walked). The `sales@example.com` account is missing in odoo-dev, so N1 is BLOCKED until it is created.
