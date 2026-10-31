@@ -40,7 +40,7 @@ Source: Week 4 workshop, Exercise 4E — field `credit_warning_message` (Text, c
 - **Confidence**: HIGH — pattern copied from core banner and sibling alert divs (`sale_order_views.xml:301-321`); colour classes are standard Bootstrap alert classes already used across `addons/account/views/account_move_views.xml`.
 
 ### Success Criteria
-- **User sees**: on a draft/sent quotation, a yellow banner (customer between 80% and 100% of limit after this order) or red banner (customer over limit after this order) at the top of the form with four lines: headline naming the customer and the credit limit, outstanding receivables, this order's amount, total after this order. No banner otherwise. Exactly one credit banner is ever visible (core's yellow banner is hidden).
+- **User sees**: on a draft/sent quotation, a yellow banner (customer at or above 80% and at most 100% of limit after this order) or red banner (customer over limit after this order) at the top of the form with four lines: headline naming the customer and the credit limit, outstanding receivables, this order's amount, total after this order. No banner otherwise. Exactly one credit banner is ever visible (core's yellow banner is hidden).
 - **Verifiable at**: Sale Order form at `http://localhost:8069` (salesman and admin personas); `sale.order.credit_warning_message` / `credit_warning_level` in an Odoo shell or Python test.
 - **Data persisted**: none. `credit_warning_message` (Text) and `credit_warning_level` (Selection `warning`/`danger`) are computed, `store=False`; no DB columns, no new models, no ACL rows. Reads existing `res.partner.credit`, `credit_to_invoice`, `credit_limit` (`addons/account/models/partner.py:517-527`) and `sale.order.amount_total`, `currency_rate`.
 - **Observable within**: immediate — banner recomputes in the form on change of customer or order lines (standard onchange), no save required.
@@ -55,13 +55,14 @@ Notation: `total = credit + credit_to_invoice + amount_total / currency_rate` (c
 **When** the form renders
 **Then** exactly one credit banner is visible, located between the status bar and the form sheet; it is a red `alert-danger` div containing the new message; core's yellow `partner_credit_warning` banner is not visible; the resolved form arch (`get_view`) contains both new divs and the hidden `credit_warning_level` field
 
-#### AC-HAPPY-1: Yellow banner when total is above 80% and at most 100% of the limit
+#### AC-HAPPY-1: Yellow banner when total is at or above 80% and at most 100% of the limit
 **Priority**: MUST
 **Given** customer limit 1,000.00, outstanding (credit + credit_to_invoice) 700.00, draft quotation of 150.00 (total 850.00)
 **When** the user views the quotation
 **Then** `credit_warning_level == 'warning'`, an `alert-warning` banner is shown, and the message equals (amounts via `formatLang` in company currency):
 `<Customer> is approaching its credit limit of $ 1,000.00.` / `Outstanding receivables (incl. confirmed orders to invoice): $ 700.00` / `This order: $ 150.00` / `Total after this order: $ 850.00`
 **And** at exactly total == 1,000.00 the banner is still yellow (red requires strictly over limit)
+**And** at exactly total == 800.00 (80.00%) the banner is yellow (yellow is inclusive: `total >= 0.8 * limit`)
 
 #### AC-HAPPY-2: Red banner when total exceeds the limit
 **Priority**: MUST
@@ -72,7 +73,7 @@ Notation: `total = credit + credit_to_invoice + amount_total / currency_rate` (c
 
 #### AC-HAPPY-3: No banner when there is no limit, the feature is off, or the customer is well within limit
 **Priority**: MUST
-**Given** any of: (a) customer `credit_limit` is 0; (b) company `account_use_credit_limit` is False; (c) total <= 80% of limit (including exactly 80.00% — yellow requires strictly above); (d) order has no customer
+**Given** any of: (a) customer `credit_limit` is 0; (b) company `account_use_credit_limit` is False; (c) total < 80% of limit (e.g. 799.99 of 1,000.00 — exactly 80.00% is yellow, see AC-HAPPY-1); (d) order has no customer
 **When** the quotation is viewed
 **Then** `credit_warning_message` is an empty string, `credit_warning_level` is falsy, and neither new banner nor core banner is visible
 
@@ -151,7 +152,7 @@ Notation: `total = credit + credit_to_invoice + amount_total / currency_rate` (c
    - Yellow (`warning`): `{partner} is approaching its credit limit of {limit}.` / `Outstanding receivables (incl. confirmed orders to invoice): {outstanding}` / `This order: {order_amount}` / `Total after this order: {total}`
    - Red (`danger`): `{partner} exceeds its credit limit of {limit}.` + same three lines
    - `{partner}` = `commercial_partner_id.name`; `{outstanding}` = `credit + credit_to_invoice`; `{order_amount}` = `amount_total / currency_rate`; `{total}` = sum; all as `formatLang(self.env, x, currency_obj=company.currency_id)`.
-   - Thresholds: level `danger` if `total > limit`; `warning` if `total > 0.8 * limit`; else none. Empty message when `limit <= 0`. Percentage is deliberately not shown (avoids rounding edge cases at 80%/100%).
+   - Thresholds: level `danger` if `total > limit`; `warning` if `total >= 0.8 * limit` (inclusive, per HITL Gate #1); else none. Empty message when `limit <= 0`. Percentage is deliberately not shown (avoids rounding edge cases at 80%/100%).
 
 **Other implementation notes for the plan** (non-binding): compute with `@api.depends('partner_id', 'company_id', 'state', 'amount_total', 'currency_rate')` + `@api.depends_context('company')`; read partner as `order.partner_id.commercial_partner_id.with_company(order.company_id).sudo()`; keep the message and level in one `_compute_credit_warning` that sets both fields so they cannot disagree. Tests run in `odoo-test` DB per `techContext.md` (`--test-tags /sale_credit_limit_warning`, `--http-port=8070`); Chrome is absent in the container, so banner visibility/colour is covered by arch assertions + a `/bmb:uat` salesman walk, not a tour.
 
@@ -159,6 +160,7 @@ Notation: `total = credit + credit_to_invoice + amount_total / currency_rate` (c
 Specification is concrete — proceed to implementation planning. The only items needing the human are the five confirmable decisions above (lowest confidence: Decision 4 addon location, MEDIUM; Decision 5 wording, MEDIUM).
 
 **Human review (2026-10-31)**: Specification APPROVED as written. All five decisions accepted: (1) core formula `credit + credit_to_invoice + amount_total/currency_rate`; (2) hide core banner, keep its field in the arch; (3) gate on `account_use_credit_limit` + `state in ('draft','sent')`; (4) addon at `custom_addons/sale_credit_limit_warning/` with the two infra edits; (5) message text as drafted. Taxonomy lint: CLEAN.
+**HITL Gate #1 amendment (2026-10-31)**: yellow threshold changed from strictly above 80% to **at or above 80%** (`total >= 0.8 * limit`), matching the workshop spec. Red unchanged (strictly over 100%).
 
 ## Test Strategy
 
@@ -183,7 +185,7 @@ Specification is concrete — proceed to implementation planning. The only items
 
 ### Per-Phase Test Guidance
 - **Phase 1 (11 tests)** — compute logic on `sale.order`:
-  1. yellow at 850/1000 with exact four-line message (AC-HAPPY-1); 2. boundary: total == 1000 is yellow, total == 800 is empty (AC-HAPPY-1/3c); 3. red at 1100 with headline text (AC-HAPPY-2); 4. red with 0.00 order when outstanding already > limit (AC-HAPPY-2); 5. empty when `credit_limit` 0 / setting off / no partner (AC-HAPPY-3a,b,d); 6. empty for `sale`/`cancel` states, red for `sent` (AC-HAPPY-4); 7. stub detection — posted invoice 300 + confirmed uninvoiced order 400 + quote 200, then pay invoice, then change quote amount; message changes each time (AC-HAPPY-5); 8. multicurrency rate 2.0 (mirror `test_credit_limit_multicurrency`) (AC-HAPPY-6); 9. `Form` onchange: add line / change partner updates level without save (AC-HAPPY-7); 10. salesman without accounting groups — `Form(order.with_user(salesman))` no AccessError, red shown (AC-ERROR-1); 11. no exception + `''` for new record without partner, `currency_rate == 0`, no lines (AC-ERROR-2). (AC-ERROR-4 multi-company covered inside test 10's fixture via `with_company` read where feasible; otherwise a 12th test if setup is cheap.)
+  1. yellow at 850/1000 with exact four-line message (AC-HAPPY-1); 2. boundary: total == 1000 is yellow, total == 800 is yellow, total == 799.99 is empty (AC-HAPPY-1/3c); 3. red at 1100 with headline text (AC-HAPPY-2); 4. red with 0.00 order when outstanding already > limit (AC-HAPPY-2); 5. empty when `credit_limit` 0 / setting off / no partner (AC-HAPPY-3a,b,d); 6. empty for `sale`/`cancel` states, red for `sent` (AC-HAPPY-4); 7. stub detection — posted invoice 300 + confirmed uninvoiced order 400 + quote 200, then pay invoice, then change quote amount; message changes each time (AC-HAPPY-5); 8. multicurrency rate 2.0 (mirror `test_credit_limit_multicurrency`) (AC-HAPPY-6); 9. `Form` onchange: add line / change partner updates level without save (AC-HAPPY-7); 10. salesman without accounting groups — `Form(order.with_user(salesman))` no AccessError, red shown (AC-ERROR-1); 11. no exception + `''` for new record without partner, `currency_rate == 0`, no lines (AC-ERROR-2). (AC-ERROR-4 multi-company covered inside test 10's fixture via `with_company` read where feasible; otherwise a 12th test if setup is cheap.)
 - **Phase 2 (3 tests)** — view + regression:
   12. `get_view(view_type='form')` arch contains the `alert-warning` and `alert-danger` divs with `credit_warning_message`, the hidden `credit_warning_level` field, and core's banner div has `invisible="1"` (AC-ENTRY-1); 13. `partner_credit_warning` still present in arch and readable via `Form` (AC-ENTRY-1 / AC-ERROR-3 guard); 14. core suite `TestSaleOrderCreditLimit` green with addon installed (AC-ERROR-3, run as separate command — counted as a verification step).
 
