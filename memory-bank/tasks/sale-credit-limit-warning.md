@@ -1,13 +1,13 @@
 ---
 slug: sale-credit-limit-warning
 feature: sale-credit-limit-warning
-status: PLANNING_COMPLETE
+status: BUILD_COMPLETE
 ---
 
 # sale-credit-limit-warning: Customer Credit Limit Warning
 
 **Complexity**: Level 2 (inherited from sale-credit-limit-warning)
-**Status**: PLANNING_COMPLETE
+**Status**: BUILD_COMPLETE
 **Roadmap**: sale-credit-limit-warning
 **Branch**: feature/sale-credit-limit-warning
 **Worktree**: N/A (primary checkout — `docker compose up --watch` syncs `./addons` from here)
