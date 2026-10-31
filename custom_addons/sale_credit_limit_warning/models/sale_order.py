@@ -20,7 +20,12 @@ class SaleOrder(models.Model):
         compute='_compute_credit_warning',
     )
 
-    @api.depends('partner_id', 'company_id', 'state', 'amount_total', 'currency_rate')
+    @api.depends(
+        'partner_id', 'company_id', 'state', 'amount_total', 'currency_rate',
+        'partner_id.commercial_partner_id.credit_limit',
+        'partner_id.commercial_partner_id.credit',
+        'company_id.account_use_credit_limit',
+    )
     @api.depends_context('company')
     def _compute_credit_warning(self):
         for order in self:

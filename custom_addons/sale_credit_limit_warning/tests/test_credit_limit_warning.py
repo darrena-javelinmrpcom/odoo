@@ -109,20 +109,16 @@ class TestCreditLimitWarning(TestSaleCommon):
         order = self._quote(100.0)
         self.assertEqual(order.credit_warning_level, 'danger')
 
-        # (a) no limit on the customer
-        # (the limit is not a compute dependency: a fresh read recomputes in real use)
-        fields_ = ['credit_warning_message', 'credit_warning_level']
+        # (a) no limit on the customer — `credit_limit` is a compute dependency,
+        # so changing it recomputes the warning without manual invalidation.
         self.partner_a.credit_limit = 0.0
-        order.invalidate_recordset(fields_)
         self.assertEqual(order.credit_warning_message, '')
         self.assertFalse(order.credit_warning_level)
         self.partner_a.credit_limit = 1000.0
-        order.invalidate_recordset(fields_)
         self.assertEqual(order.credit_warning_level, 'danger')
 
-        # (b) company switch off
+        # (b) company switch off — `account_use_credit_limit` is a dependency too
         self.env.company.account_use_credit_limit = False
-        order.invalidate_recordset(fields_)
         self.assertEqual(order.credit_warning_message, '')
         self.assertFalse(order.credit_warning_level)
         self.env.company.account_use_credit_limit = True
