@@ -142,3 +142,31 @@ pylint/eslint are not installed in the image; corresponding checks skip.
 ## UAT
 
 - Config: `memory-bank/uat-config.md` — dev URL `http://localhost:8069`, auth token+fallback via `/web/login`, personas admin / user / portal / salesman / warehouse.
+
+<!-- AUTO-MANAGED: c4-references-start -->
+## C4 References
+
+<!--
+  This section is auto-managed by /bmb:c4. Run /bmb:c4 to refresh.
+  Do not hand-edit between the AUTO-MANAGED markers — edits are overwritten.
+-->
+
+For runtime architecture, deployment topology, and tech-stack mapping per container, see:
+
+- **Container index** (one-line-per-container): [memory-bank/c4/c4-container.md](./c4/c4-container.md)
+- **System-wide container diagram + cross-container matrix**: [memory-bank/c4/c4-container-relationships.md](./c4/c4-container-relationships.md)
+- **Per-container detail docs** (always-on, one per container): [memory-bank/c4/containers/](./c4/containers/)
+- **API specifications referenced from**: container detail docs (do not duplicate schemas inline; see canonical schema paths)
+
+This file (`techContext.md`) remains the canonical source for:
+
+- Component Structure (file paths, languages, test directories)
+- Development Commands (lint, type, build, test)
+- Tech versions (runtimes, frameworks, libraries)
+
+The Container-level C4 doc summarizes deployment topology and references this file for tech versions — it does not duplicate them.
+
+**Last refreshed**: 2026-10-31T12:00:00Z
+**Plugin version**: 2.2.1
+
+<!-- AUTO-MANAGED: c4-references-end -->

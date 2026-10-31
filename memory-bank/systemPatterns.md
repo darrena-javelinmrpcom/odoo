@@ -135,3 +135,49 @@ j. **Ratio (addons/sale)**: 28 test files, ~9,340 test lines vs ~7,940 source py
 k. **Not tested much**: `.po` content, pure view XML layout (validated at install via RNG only), SCSS, demo data (load-only), most crons and mail templates. No coverage tooling; no CI in the fork. Chrome is not in the docker image, so tours/headless Hoot can't run in-container.
 
 **Running**: see `techContext.md` § Development Commands (`--test-enable --test-tags /<module>[:Class.method]`, separate `odoo-test` DB, `--http-port=8070` when the main server is running).
+
+<!-- AUTO-MANAGED: c4-architecture-start -->
+## C4 Architecture
+
+<!--
+  This section is auto-managed by /bmb:c4. Run /bmb:c4 to refresh.
+  Do not hand-edit between the AUTO-MANAGED markers — edits are overwritten.
+-->
+
+This project's architecture is documented at four progressively zoomed-in C4 levels:
+
+| Level | Audience | Document |
+|-------|----------|----------|
+| 1. Context | Everyone | [memory-bank/c4/c4-context.md](./c4/c4-context.md) — system purpose, personas, externals |
+| 2. Container (index) | Tech-aware stakeholders | [memory-bank/c4/c4-container.md](./c4/c4-container.md) — one-line-per-container index |
+| 2. Container (diagram) | Tech-aware stakeholders | [memory-bank/c4/c4-container-relationships.md](./c4/c4-container-relationships.md) — system-wide topology + cross-container matrix |
+| 2. Container (detail) | Developers | [memory-bank/c4/containers/](./c4/containers/) — per-container deep-dive (always-on) |
+| 3. Component (index) | Developers | [memory-bank/c4/c4-component.md](./c4/c4-component.md) — components grouped by container |
+| 3. Component (diagram) | Developers | [memory-bank/c4/c4-component-relationships.md](./c4/c4-component-relationships.md) — cross-component dependency graph |
+| 3. Component (detail) | Developers | [memory-bank/c4/components/](./c4/components/) — per-component deep-dive |
+| 4. Code | Developers maintaining specific code | [memory-bank/c4/code/](./c4/code/) — per-directory docs |
+
+**Entry point**: [memory-bank/c4/c4-index.md](./c4/c4-index.md)
+
+### How Agents Should Use the C4 Docs
+
+- **Planning agents** (`/bmb:plan`): read `c4-context.md` and `c4-container.md` to ground plans in the existing system shape. Drill into specific components only when the task affects them.
+- **TDD Agent** (`/bmb:build`): when introducing or modifying a component, read its `components/c4-component-<name>.md` first. Update the affected component doc as part of the build (or rerun `/bmb:c4` after the build).
+- **TDD Agent**: use `c4-component.md` (the lean index) to find which component owns the code under test, then read its `components/c4-component-<name>.md` detail doc for interface signatures and integration points worth covering.
+- **Reflection Agent**: cite C4 levels when reflecting on architectural drift ("This task added cross-container traffic not yet in c4-container.md").
+- **UAT Walker**: use `c4-container.md` to identify which container's UI surface a journey is walking.
+
+### Refresh Cadence
+
+`/bmb:c4` is idempotent. Re-run when:
+- A new component, service, or container is introduced
+- Deployment topology changes (split, merge, new datastore, new external integration)
+- Before a major release that needs current architecture artifacts
+- After significant refactors
+
+It only re-walks subtrees whose source-directory hashes have changed.
+
+**Last refreshed**: 2026-10-31T12:00:00Z
+**Plugin version**: 2.2.1
+
+<!-- AUTO-MANAGED: c4-architecture-end -->
