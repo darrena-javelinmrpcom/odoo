@@ -5,7 +5,9 @@
     'category': 'Sales/Sales',
     'summary': 'Colour-coded customer credit limit warning on the sales order form',
     'depends': ['sale'],
-    'data': [],
+    'data': [
+        'views/sale_order_views.xml',
+    ],
     'license': 'LGPL-3',
     'installable': True,
     'auto_install': False,

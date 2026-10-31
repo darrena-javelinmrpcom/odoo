@@ -46,14 +46,14 @@ Fork of **Odoo 18.0 Community** (`odoo/release.py`: `version_info = (18, 0, 0, F
 **docker-compose.yml**:
 - `db`: `postgres:16`, `POSTGRES_USER=odoo`, `POSTGRES_DB=postgres`, volume `pg-data`
 - `odoo`: local build, `depends_on: db`, `8069:8069`, `./docker/odoo.conf` → `/etc/odoo/odoo.conf:ro`, volume `odoo-filestore` → `/var/lib/odoo`, `PYTHONDONTWRITEBYTECODE=1`
-- `develop.watch`: `./addons` → `/opt/odoo/addons` (sync+restart), `./odoo` → `/opt/odoo/odoo` (sync+restart), `requirements.txt` → rebuild
+- `develop.watch`: `./addons` → `/opt/odoo/addons` (sync+restart), `./custom_addons` → `/opt/odoo/custom_addons` (sync+restart), `./odoo` → `/opt/odoo/odoo` (sync+restart), `requirements.txt` → rebuild
 
-**Important**: source is **baked into the image** (`COPY . .`), not bind-mounted. Only `docker compose watch` syncs `./addons` and `./odoo` into the running container. `docker compose run` uses image-time code — prefer `exec` while watch is running, or rebuild.
+**Important**: source is **baked into the image** (`COPY . .`), not bind-mounted. Only `docker compose watch` syncs `./addons`, `./custom_addons` and `./odoo` into the running container. `docker compose run` uses image-time code — prefer `exec` while watch is running, or rebuild.
 
 ## Environment Configuration
 
 `docker/odoo.conf` (mounted read-only):
-- `addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons` — **no custom-addons path yet**
+- `addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons,/opt/odoo/custom_addons`
 - `data_dir = /var/lib/odoo`
 - `db_host = db`, `db_port = 5432`, `db_user = odoo`
 - `dev_mode = reload` (Python auto-reload; XML/data still needs `-u` or `dev_mode=xml`)
@@ -104,6 +104,16 @@ docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-test -i 
 #   ... --test-tags post_install/<module>
 ```
 Prefer a throwaway DB (`odoo-test`) over `odoo-dev` for test runs.
+
+Tests only run for modules being upgraded or installed in that run, so pass `-u` for the module under test and for any core module whose tests you want:
+```bash
+# custom addon (sale_credit_limit_warning)
+docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-test -u sale_credit_limit_warning \
+  --test-tags /sale_credit_limit_warning --stop-after-init --http-port=8070 --log-level=test
+# core regression for the credit-limit behaviour the addon relies on
+docker compose exec odoo python odoo-bin -c /etc/odoo/odoo.conf -d odoo-test -u sale \
+  --test-tags /sale:TestSaleOrderCreditLimit --stop-after-init --http-port=8070 --log-level=test
+```
 
 ### JS unit tests (Hoot)
 - Specs: `addons/*/static/tests/**/*.test.js`; helpers `addons/web/static/tests/web_test_helpers.js`.

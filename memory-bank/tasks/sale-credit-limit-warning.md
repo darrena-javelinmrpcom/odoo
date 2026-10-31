@@ -223,7 +223,7 @@ Specification is concrete — proceed to implementation planning. The only items
 
 ### Phases
 - [x] Phase 1: Infra + addon skeleton + compute fields (`credit_warning_message`, `credit_warning_level`) with 11 TDD tests — ACs HAPPY-1..7, ERROR-1, ERROR-2, ERROR-4
-- [ ] Phase 2: Inherited form view (two colour-coded banners, core banner hidden), install in `odoo-dev`, view tests + core regression run, memory-bank docs — ACs ENTRY-1, ERROR-3; final phase delivers the full entry-to-success flow (open quotation → see yellow/red banner)
+- [x] Phase 2: Inherited form view (two colour-coded banners, core banner hidden), install in `odoo-dev`, view tests + core regression run, memory-bank docs — ACs ENTRY-1, ERROR-3; final phase delivers the full entry-to-success flow (open quotation → see yellow/red banner)
 
 ## Creative Phases
 
@@ -233,9 +233,10 @@ Specification is concrete — proceed to implementation planning. The only items
 
 ## Execution State
 
-**Build Status**: IDLE (Phase 1 of 2 complete; Phase 2 next)
+**Build Status**: BUILD_COMPLETE (Phase 2 of 2 complete)
 **Current Phase**: BUILD
-**Last Completed**: Phase 1 (2026-10-31) - infra + addon skeleton + compute fields, 12 tests passing in odoo-test
+**Last Completed**: Phase 2 (2026-10-31) - inherited form view, 14 addon tests + core TestSaleOrderCreditLimit (7) green, installed in odoo-dev, docs updated; review APPROVED (whole feature diff)
+**Earlier**: Phase 1 (2026-10-31) - infra + addon skeleton + compute fields
 **Can Resume**: NO
 
 ### Guard & Recovery Log

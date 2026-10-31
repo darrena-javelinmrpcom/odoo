@@ -1,8 +1,10 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from lxml import etree
+
 from odoo.fields import Command
 from odoo.addons.sale.tests.common import TestSaleCommon
-from odoo.tests import tagged
+from odoo.tests import Form, tagged
 
 
 @tagged('post_install', '-at_install')
@@ -244,3 +246,47 @@ class TestCreditLimitWarning(TestSaleCommon):
         order = order.with_company(self.env.company)
         self.assertEqual(order.credit_warning_level, 'danger')
         self.assertIn("500.00", self._lines(order)[0])
+
+    # -- Phase 2: view ----------------------------------------------------------
+
+    def _form_arch(self):
+        arch = self.env['sale.order'].get_view(view_type='form')['arch']
+        return etree.fromstring(arch)
+
+    def test_13_view_arch(self):
+        arch = self._form_arch()
+        warning = arch.xpath(
+            "//div[contains(@class, 'alert-warning')][@role='alert']"
+            "[field[@name='credit_warning_message']]")
+        danger = arch.xpath(
+            "//div[contains(@class, 'alert-danger')][@role='alert']"
+            "[field[@name='credit_warning_message']]")
+        self.assertEqual(len(warning), 1)
+        self.assertEqual(len(danger), 1)
+        self.assertEqual(warning[0].get('invisible'), "credit_warning_level != 'warning'")
+        self.assertEqual(danger[0].get('invisible'), "credit_warning_level != 'danger'")
+        # hidden level field so the invisible expressions can evaluate
+        level = arch.xpath("//field[@name='credit_warning_level']")
+        self.assertEqual(len(level), 1)
+        self.assertEqual(level[0].get('invisible'), '1')
+        # core banner hidden but its field is kept in the arch
+        core_field = arch.xpath("//field[@name='partner_credit_warning']")
+        self.assertEqual(len(core_field), 1)
+        self.assertEqual(core_field[0].getparent().get('invisible'), '1')
+        # banners sit between the status bar header and the sheet
+        banners = arch.xpath("//form/div[field[@name='credit_warning_message']]")
+        self.assertEqual(len(banners), 2)
+        self.assertIsNotNone(banners[0].getprevious())
+        self.assertEqual(arch.xpath("//form/sheet")[0].getprevious().tag, 'div')
+
+    def test_14_core_field_still_readable_and_form_updates(self):
+        self._post_invoice(900.0)
+        order = self._quote(500.0, user_id=self.sales_user.id)
+        with Form(order.with_user(self.sales_user)) as order_form:
+            self.assertEqual(order_form.credit_warning_level, 'danger')
+            self.assertIn("Total after this order: $\xa01,400.00", order_form.credit_warning_message)
+            # core field still available through the form (core test_credit_limit_access)
+            self.assertIn('has reached its credit limit', order_form.partner_credit_warning)
+            order_form.partner_id = self.env['res.partner'].create({'name': 'no limit'})
+            self.assertFalse(order_form.credit_warning_level)
+            self.assertFalse(order_form.credit_warning_message)

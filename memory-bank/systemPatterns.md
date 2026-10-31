@@ -1,6 +1,6 @@
 # System Patterns
 
-Odoo **18.0 Community** (LGPL-3) fork. 621 addon directories under `addons/`; framework core under `odoo/`. Fork-specific additions are limited to `Dockerfile`, `docker-compose.yml`, `docker/odoo.conf`. No custom addons exist yet.
+Odoo **18.0 Community** (LGPL-3) fork. 621 addon directories under `addons/`; framework core under `odoo/`. Fork-specific additions are limited to `Dockerfile`, `docker-compose.yml`, `docker/odoo.conf`, and the custom addons under `custom_addons/`. First custom addon is live: `custom_addons/sale_credit_limit_warning/`.
 
 ## Guiding Principles
 
@@ -26,7 +26,7 @@ Odoo **18.0 Community** (LGPL-3) fork. 621 addon directories under `addons/`; fr
 - **Core**: `odoo/models.py` (ORM: BaseModel, Model, TransientModel, AbstractModel), `fields.py`, `api.py` (Environment, `depends`/`onchange`/`constrains`/`model_create_multi`), `http.py` (WSGI, `route`, Request, sessions), `sql_db.py`, `osv/expression.py` (domains), `tools/`, `exceptions.py`, `service/` (RPC services).
 - **`odoo/addons/base`**: core data model (`ir.*`, `res.*`, users, groups, `ir.rule`, `ir.model.access`); `odoo/addons/test_*` are framework test modules.
 - **Web client**: `addons/web` — OWL assets (`static/src`), Hoot framework, controllers (`dataset.py`, `action.py`, `view.py`, `session.py`, `home.py`, `binary.py`, `export.py`, `report.py`, `json.py`).
-- **Runtime**: docker compose — `postgres:16` + `odoo` (python:3.12-slim) on 8069; `docker/odoo.conf` with `dev_mode = reload`; `develop.watch` syncs `./addons` and `./odoo`.
+- **Runtime**: docker compose — `postgres:16` + `odoo` (python:3.12-slim) on 8069; `docker/odoo.conf` with `dev_mode = reload`; `develop.watch` syncs `./addons`, `./custom_addons` and `./odoo`.
 
 ## Directory Structure
 
@@ -35,7 +35,8 @@ odoo-bin                 entry script
 odoo/                    framework: models.py fields.py api.py http.py sql_db.py cli/ modules/ service/ tools/ osv/ tests/
 odoo/addons/base         base module (+ odoo/addons/test_* framework test modules)
 addons/                  621 standard modules (sale, sale_management, sales_team, web, account, stock, …)
-docker/odoo.conf         addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons  (no custom path yet)
+docker/odoo.conf         addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons,/opt/odoo/custom_addons
+custom_addons/           project-specific addons (sale_credit_limit_warning)
 debian/, setup/, doc/    packaging & docs
 memory-bank/             Banyan project memory
 ```
@@ -84,13 +85,30 @@ memory-bank/             Banyan project memory
 | `tests/` | .py | `test_*.py`, `common.py` fixtures |
 | `i18n/` | .po + .pot | |
 
-### New custom module shape
-No custom addons exist yet. Recommended:
-1. Create top-level `custom_addons/`.
-2. Add `/opt/odoo/custom_addons` to `addons_path` in `docker/odoo.conf`.
-3. Add a `develop.watch` sync+restart entry for `./custom_addons` in `docker-compose.yml` (`COPY . .` already includes it in the image).
-4. Scaffold: `docker compose exec odoo python odoo-bin scaffold <name> custom_addons/` (then copy out / sync).
-5. Module contents: `__manifest__.py` (`depends`, `data` with security first and menus last, `assets`, `license: 'LGPL-3'`, `installable: True`), `models/`, `views/`, `security/ir.model.access.csv` (+ `ir_rules.xml`), `data/`, `controllers/`, `wizard/`, `static/src/`, `static/tests/`, `tests/`, `i18n/`.
+### Custom module shape (as built)
+Top-level `custom_addons/` is wired in: `/opt/odoo/custom_addons` is in `addons_path` (`docker/odoo.conf`), and `develop.watch` has a sync+restart entry for `./custom_addons` (`docker-compose.yml`; `COPY . .` also bakes it into the image).
+
+`custom_addons/sale_credit_limit_warning/` is the reference layout:
+- `__manifest__.py` — `depends: ['sale']`, `data: ['views/sale_order_views.xml']`, `license: 'LGPL-3'`, `installable: True`. No `security/` directory because it adds no models.
+- `models/sale_order.py` — `_inherit = 'sale.order'` extension.
+- `views/sale_order_views.xml` — form inheritance.
+- `tests/` — `test_credit_limit_warning.py`, imported from `tests/__init__.py`.
+
+Add `security/`, `data/`, `controllers/`, `static/`, `i18n/` only when the addon needs them (a new model requires `security/ir.model.access.csv`, listed first in `data`).
+
+**Compute fields (non-stored)**
+- Use `store=False` for display-only warnings; one shared `_compute_credit_warning` fills several fields (e.g. `credit_warning_message`, `credit_warning_level`).
+- Declare every input in `@api.depends`, including related paths (`partner_id.commercial_partner_id.credit_limit`, `company_id.account_use_credit_limit`). Add `@api.depends_context('company')` when the value is company-dependent.
+- Read company-dependent partner accounting fields with `partner.with_company(company).sudo()`. The `credit*` fields are accounting-only, so a salesman would otherwise raise `AccessError`. The company comes from the order, not the user's current company.
+- Reset the output fields at the top of the loop and `continue` on every early exit, so the field never renders `False`/`None` as text. Degrade silently (no exception) for a missing partner, zero rate or no lines.
+
+**View inheritance that replaces a core banner**
+- To swap out a core element, set `invisible="1"` on its parent `div` via `<xpath>` (`attributes`). Keep the core field itself in the arch, because other code and tests still read it through the form.
+- Add the replacement banners with `position="after"`. Each uses `invisible="<field> != '<value>'"` and needs a hidden helper field (`invisible="1"`) for the expression to evaluate.
+
+**Tests**
+- `@tagged('post_install', '-at_install')` on a `TestSaleCommon` subclass, run via `--test-tags` (see `techContext.md` § Development Commands).
+- Assert both the computed values and the view arch (`get_view(view_type='form')`) so XML regressions fail the suite.
 
 ## Testing Patterns
 
