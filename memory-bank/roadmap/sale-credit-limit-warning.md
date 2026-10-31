@@ -1,6 +1,8 @@
 ---
 version: next
-status: in_progress
+status: completed
+completed: 2026-10-31
+archive: memory-bank/archive/sale-credit-limit-warning-archive.md
 priority: high
 complexity: 2
 linked_tasks: [sale-credit-limit-warning]

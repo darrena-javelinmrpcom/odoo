@@ -1,13 +1,15 @@
 ---
 slug: sale-credit-limit-warning
 feature: sale-credit-limit-warning
-status: REFLECTION_COMPLETE
+status: COMPLETE
 ---
 
 # sale-credit-limit-warning: Customer Credit Limit Warning
 
 **Complexity**: Level 2 (inherited from sale-credit-limit-warning)
-**Status**: REFLECTION_COMPLETE
+**Status**: COMPLETE
+**Archived**: memory-bank/archive/sale-credit-limit-warning-archive.md
+**Completed**: 2026-10-31
 **Reflection**: memory-bank/reflection/sale-credit-limit-warning-reflection.md
 **Roadmap**: sale-credit-limit-warning
 **Branch**: feature/sale-credit-limit-warning
@@ -225,6 +227,7 @@ Specification is concrete — proceed to implementation planning. The only items
 ### Phases
 - [x] Phase 1: Infra + addon skeleton + compute fields (`credit_warning_message`, `credit_warning_level`) with 11 TDD tests — ACs HAPPY-1..7, ERROR-1, ERROR-2, ERROR-4
 - [x] Phase 2: Inherited form view (two colour-coded banners, core banner hidden), install in `odoo-dev`, view tests + core regression run, memory-bank docs — ACs ENTRY-1, ERROR-3; final phase delivers the full entry-to-success flow (open quotation → see yellow/red banner)
+- [x] Phase 3 (post-UAT E2E): HttpCase + web_tour for the UAT happy path (none → yellow → yellow at limit → red → none, plus live unsaved update); Dockerfile adds Chromium + websocket-client. Mobile scenario deferred (UAT-REC-01)
 
 ## Creative Phases
 
@@ -235,8 +238,7 @@ Specification is concrete — proceed to implementation planning. The only items
 ## Execution State
 
 **Build Status**: IDLE
-**Current Phase**: REFLECT → ARCHIVE
-**Current Step**: Step 4 - Git Commit - COMPLETE
+**Current Phase**: COMPLETE
 **Can Resume**: NO
 **UAT Journey**: memory-bank/creative/sale-credit-limit-warning-credit-banner-user-journey.md
 **UAT Report**: memory-bank/uat/uat-sale-credit-limit-warning.md (run uat-20261031-a7c3, PASS_WITH_RECOMMENDATIONS — Required=0 Recommended=1 Optional=0; sections happy,mobile; --skip-ux-check)
@@ -247,7 +249,7 @@ Specification is concrete — proceed to implementation planning. The only items
 **Can Resume**: NO
 
 ### Guard & Recovery Log
-(none)
+- 2026-10-31 Phase 3: build orchestrator skipped the code-review agent and the build-verifier agent (ran addon, E2E and core tests itself: 15/15, 7/7). No recorded override; recorded at archive per reflection action item.
 
 ### Active Sub-Agents
 (none)
@@ -260,3 +262,4 @@ Specification is concrete — proceed to implementation planning. The only items
 
 ### Session Notes
 - Feature branch was cut from local `chore/banyan-admin` (local `banyan` + roadmap commit), not `origin/banyan`: origin (`DaKaZ/odoo`) has no memory bank and is not pushable by this user. Push/PR steps are skipped until a writable remote exists.
+- 2026-10-31 (archive): forked to `darrena-javelinmrpcom/odoo`; remotes renamed (`origin` = fork, `upstream` = DaKaZ/odoo); `origin` fetch refspec limited to banyan, feature/*, task/*, chore/*. PR opened from the fork's feature branch into the fork's `banyan`.
