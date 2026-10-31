@@ -1,9 +1,9 @@
 ---
 version: next
-status: planned
+status: in_progress
 priority: high
 complexity: 2
-linked_tasks: []
+linked_tasks: [sale-credit-limit-warning]
 created: 2026-10-31
 ---
 
