@@ -29,34 +29,35 @@
 ## Run Metadata
 
 - **Plugin Version**: 2.2.1
-- **Last Run ID**: c4-20261031-k7m2
-- **Last Run At**: 2026-10-31T12:00:00Z
+- **Last Run ID**: c4-20261101-s4l3 (previous: c4-20261031-k7m2)
+- **Last Run At**: 2026-11-01T11:22:58Z
 - **Hash Strategy**: git-tree
-- **Scope**: custom_addons (user-selected; full repo is ~3,800 source dirs of upstream Odoo 18.0, treated as platform)
+- **Scope**: custom_addons + addons/sale (this run: `--scope addons/sale`, incremental on the custom_addons baseline; the rest of upstream Odoo 18.0, ~3,800 source dirs, is treated as platform)
 - **Levels Built**: code,component,container,glossary,context
-- **Last Completed Phase**: Annotation (Step 7) → manifest/index (Step 8)
+- **Last Completed Phase**: manifest/index (Step 8) — backlink (8c) + verify (8.5) follow
 - **IaC Adapters Used**: docker-compose, dockerfile (CI workflows: none)
+- **Approval Mode**: accept-all (user-approved mid-run); WROTE_WITH_OVERRIDES: containers/c4-container-odoo-application-server.md (1 material alteration); glossary COMPLETE_WITH_OVERRIDES (1 ambiguity auto-accepted)
 
 ## Counters
 
 | Metric | Value |
 |--------|-------|
-| Directories walked this run | 5 |
-| Directories reused from prior run | 0 |
+| Directories walked this run | 28 |
+| Directories reused from prior run | 5 |
 | Directories archived this run | 0 |
-| c4-code docs total | 5 |
-| Components | 1 |
+| c4-code docs total | 33 |
+| Components | 2 |
 | Containers | 2 |
 | IaC compute resources | 1 |
 | IaC stateful resources | 1 |
 | IaC messaging resources | 0 |
 | IaC inferred containers (no backing) | 0 |
 | Boundary resource types | 3 |
-| Entities total | 1 |
-| Entities persisted | 1 |
-| Entities orphan (no container) | 1 |
-| Lifecycle entries total | 0 |
-| Lifecycle OWNS claims | 0 |
+| Entities total | 4 |
+| Entities persisted | 4 |
+| Entities orphan (no container) | 0 |
+| Lifecycle entries total | 1 |
+| Lifecycle OWNS claims | 1 |
 | Lifecycle CONTRIBUTES claims | 0 |
 | Lifecycle CONSUMES claims | 0 |
 | Lifecycle conflicts (CONFLICT severity) | 0 |
@@ -95,6 +96,34 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
 
 | Directory | Hash Strategy | Content Hash | Last Walked | Status | Doc |
 |-----------|--------------|--------------|-------------|--------|-----|
+| addons/sale | git-tree | 3da2ff385548fd85 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale.md](code/c4-code-addons-sale.md) |
+| addons/sale/controllers | git-tree | ba9c7ef2025a3df0 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-controllers.md](code/c4-code-addons-sale-controllers.md) |
+| addons/sale/data | git-tree | 5bd511e84c04bbf7 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-data.md](code/c4-code-addons-sale-data.md) |
+| addons/sale/models | git-tree | 99548521fdbd136b | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-models.md](code/c4-code-addons-sale-models.md) |
+| addons/sale/report | git-tree | 07f381479d604b68 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-report.md](code/c4-code-addons-sale-report.md) |
+| addons/sale/security | git-tree | efba957c9aaee81f | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-security.md](code/c4-code-addons-sale-security.md) |
+| addons/sale/static/src/js | git-tree | e4f9e78c80600c53 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js.md](code/c4-code-addons-sale-static-src-js.md) |
+| addons/sale/static/src/js/badge_extra_price | git-tree | c33875c41160f345 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-badge_extra_price.md](code/c4-code-addons-sale-static-src-js-badge_extra_price.md) |
+| addons/sale/static/src/js/combo_configurator_dialog | git-tree | f41ab2166989524f | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-combo_configurator_dialog.md](code/c4-code-addons-sale-static-src-js-combo_configurator_dialog.md) |
+| addons/sale/static/src/js/models | git-tree | b52af28105bfed26 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-models.md](code/c4-code-addons-sale-static-src-js-models.md) |
+| addons/sale/static/src/js/product | git-tree | 7fbb23a0f969aae7 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-product.md](code/c4-code-addons-sale-static-src-js-product.md) |
+| addons/sale/static/src/js/product_card | git-tree | c75cdd5e50609366 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-product_card.md](code/c4-code-addons-sale-static-src-js-product_card.md) |
+| addons/sale/static/src/js/product_configurator_dialog | git-tree | e187a2c406377efd | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-product_configurator_dialog.md](code/c4-code-addons-sale-static-src-js-product_configurator_dialog.md) |
+| addons/sale/static/src/js/product_list | git-tree | fc87230f3f5a3cb7 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-product_list.md](code/c4-code-addons-sale-static-src-js-product_list.md) |
+| addons/sale/static/src/js/product_template_attribute_line | git-tree | 2fce1304554e9595 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-product_template_attribute_line.md](code/c4-code-addons-sale-static-src-js-product_template_attribute_line.md) |
+| addons/sale/static/src/js/quantity_buttons | git-tree | 07406e944b3e776e | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-quantity_buttons.md](code/c4-code-addons-sale-static-src-js-quantity_buttons.md) |
+| addons/sale/static/src/js/sale_action_helper | git-tree | b65b187228d6be69 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-sale_action_helper.md](code/c4-code-addons-sale-static-src-js-sale_action_helper.md) |
+| addons/sale/static/src/js/sale_order_line_field | git-tree | 98436806af1ae711 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-sale_order_line_field.md](code/c4-code-addons-sale-static-src-js-sale_order_line_field.md) |
+| addons/sale/static/src/js/tours | git-tree | 2e1e074e23876dd5 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-js-tours.md](code/c4-code-addons-sale-static-src-js-tours.md) |
+| addons/sale/static/src/views/sale_onboarding_kanban | git-tree | 2fb0f8ef7a1d8f09 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-views-sale_onboarding_kanban.md](code/c4-code-addons-sale-static-src-views-sale_onboarding_kanban.md) |
+| addons/sale/static/src/views/sale_onboarding_list | git-tree | afb94ccf0e1cd65c | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-views-sale_onboarding_list.md](code/c4-code-addons-sale-static-src-views-sale_onboarding_list.md) |
+| addons/sale/static/src/xml | git-tree | f7c8b32ccd7148f4 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-src-xml.md](code/c4-code-addons-sale-static-src-xml.md) |
+| addons/sale/static/tests | git-tree | d6dd25c43c64bf32 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-tests.md](code/c4-code-addons-sale-static-tests.md) |
+| addons/sale/static/tests/mock_server/mock_models | git-tree | 2739b72a91bb84d7 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-tests-mock_server-mock_models.md](code/c4-code-addons-sale-static-tests-mock_server-mock_models.md) |
+| addons/sale/static/tests/tours | git-tree | af45800f074ba3c3 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-static-tests-tours.md](code/c4-code-addons-sale-static-tests-tours.md) |
+| addons/sale/tests | git-tree | 890ba7843757feab | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-tests.md](code/c4-code-addons-sale-tests.md) |
+| addons/sale/views | git-tree | de64ced4d34e2023 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-views.md](code/c4-code-addons-sale-views.md) |
+| addons/sale/wizard | git-tree | b317ea138901ab00 | 2026-11-01T11:22:58Z | up-to-date | [code/c4-code-addons-sale-wizard.md](code/c4-code-addons-sale-wizard.md) |
 | custom_addons/sale_credit_limit_warning | git-tree | 045b2f687b757f64 | 2026-10-31T12:00:00Z | up-to-date | [code/c4-code-custom_addons-sale_credit_limit_warning.md](code/c4-code-custom_addons-sale_credit_limit_warning.md) |
 | custom_addons/sale_credit_limit_warning/models | git-tree | e8b3f8af4e4cfe4f | 2026-10-31T12:00:00Z | up-to-date | [code/c4-code-custom_addons-sale_credit_limit_warning-models.md](code/c4-code-custom_addons-sale_credit_limit_warning-models.md) |
 | custom_addons/sale_credit_limit_warning/static/tests/tours | git-tree | 955c3b845feac20e | 2026-10-31T12:00:00Z | up-to-date | [code/c4-code-custom_addons-sale_credit_limit_warning-static-tests-tours.md](code/c4-code-custom_addons-sale_credit_limit_warning-static-tests-tours.md) |
@@ -109,6 +138,7 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
 
 | Component | Constituent Code Docs | Lifecycle Hash | Last Synthesized | Status | Doc |
 |-----------|----------------------|----------------|------------------|--------|-----|
+| sale | 28 docs: code/c4-code-addons-sale*.md (every Code-Level Entry under addons/sale) | sale.order lifecycle (OWNS; 5 transitions) — recompute on next run | 2026-11-01T11:22:58Z | up-to-date | [components/c4-component-sale.md](components/c4-component-sale.md) |
 | sale-credit-limit-warning | code/c4-code-custom_addons-sale_credit_limit_warning.md; code/c4-code-custom_addons-sale_credit_limit_warning-models.md; code/c4-code-custom_addons-sale_credit_limit_warning-static-tests-tours.md; code/c4-code-custom_addons-sale_credit_limit_warning-tests.md; code/c4-code-custom_addons-sale_credit_limit_warning-views.md | (empty — no Lifecycle Signals in constituents) | 2026-10-31T12:00:00Z | up-to-date | [components/c4-component-sale-credit-limit-warning.md](components/c4-component-sale-credit-limit-warning.md) |
 
 <!--
@@ -120,7 +150,7 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
   synthesis is skipped.
 
   Grouping rule (deterministic): one component per Odoo addon directory under
-  custom_addons/ (the addon's root + all subdirectories).
+  custom_addons/ or addons/ (the addon's root + all subdirectories).
 -->
 
 <!-- /AUTO-MANAGED: component-entries -->
@@ -131,8 +161,8 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
 
 | Container | Class | Primary IaC Resource | Image Trace | Components | Last Synthesized | Status | Doc |
 |-----------|-------|---------------------|-------------|------------|------------------|--------|-----|
-| Odoo Application Server | Compute | docker-compose.services.odoo | traced (Dockerfile) | sale-credit-limit-warning | 2026-10-31T12:00:00Z | up-to-date | [containers/c4-container-odoo-application-server.md](containers/c4-container-odoo-application-server.md) |
-| PostgreSQL Database | Stateful | docker-compose.services.db | external (postgres:16) | (none) | 2026-10-31T12:00:00Z | up-to-date | [containers/c4-container-postgresql-database.md](containers/c4-container-postgresql-database.md) |
+| Odoo Application Server | Compute | docker-compose.services.odoo | traced (Dockerfile) | sale, sale-credit-limit-warning | 2026-11-01T11:22:58Z | up-to-date (WROTE_WITH_OVERRIDES) | [containers/c4-container-odoo-application-server.md](containers/c4-container-odoo-application-server.md) |
+| PostgreSQL Database | Stateful | docker-compose.services.db | external (postgres:16) | (none) | 2026-11-01T11:22:58Z | up-to-date | [containers/c4-container-postgresql-database.md](containers/c4-container-postgresql-database.md) |
 
 <!-- /AUTO-MANAGED: container-entries -->
 
@@ -155,7 +185,7 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
 
 | Last Run | Input Hash | Entities Total | Persisted | Orphan | Compliance Scope | Status | Doc |
 |----------|-----------|---------------:|----------:|-------:|------------------|--------|-----|
-| 2026-10-31T12:00:00Z | 7577ff4695a34d5857845ae2a1885536bb2e13dc50d1ea03071eb657a31c2703 | 1 | 1 | 1 | none | COMPLETE (1 warning: SaleOrder has no container_hint) | [c4-entities.md](c4-entities.md) |
+| 2026-11-01T11:22:58Z | 20dd298337ecae706e1dbbf0b71d6582d9688cf291504f04274832e0d8917652 | 4 | 4 | 0 | GDPR, CCPA | COMPLETE (4 warnings, see Coverage Notes) | [c4-entities.md](c4-entities.md) |
 
 <!-- /AUTO-MANAGED: entity-aggregation-entry -->
 
@@ -179,12 +209,13 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
 
 | Field | Value |
 |---|---|
-| Last run | 2026-10-31T12:00:00Z |
-| Terms input hash | 21a0f04204ba6d3d0e37af2d42b68384086264bd87df37c43dcc3fca79a2dcc5 |
-| Status | COMPLETE |
-| Canonical count | 10 |
+| Last run | 2026-11-01T11:22:58Z |
+| Terms input hash | 12b0e43ec8fafd29e6d5329150c68a9805aad43eecf170935bc23ef805f9fa07 |
+| Status | COMPLETE_WITH_OVERRIDES |
+| Canonical count | 220 |
 | Ambiguity count (pending) | 0 |
 | Ambiguity count (ratified this run via carryover) | 0 |
+| Ambiguity count (auto-accepted this run, accept-all) | 1 (is_configurable / is_configurable_product → is_configurable) |
 | Bounded-context exclusions | 0 |
 | USER-MANAGED decisions carried over | 0 |
 | Doc path | memory-bank/c4/c4-glossary.md |
@@ -256,7 +287,7 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
 
 | Last Synthesized | Status | Doc |
 |------------------|--------|-----|
-| 2026-10-31T12:00:00Z | COMPLETE | [c4-context.md](c4-context.md) |
+| 2026-11-01T11:22:58Z | COMPLETE | [c4-context.md](c4-context.md) |
 
 <!-- /AUTO-MANAGED: context-entry -->
 
@@ -267,7 +298,7 @@ Include patterns this run: `*.py`, `*.js`, `*.xml`, `*.csv` (Odoo addon: models,
 | Input | sha256 (first 16) | Affects |
 |-------|-------------------|---------|
 | memory-bank/productBrief.md | 17524a670078fc4e | Context |
-| memory-bank/techContext.md | b22be0e9d1937203 | Container (hash taken after this run's annotation) |
+| memory-bank/techContext.md | 2d3098e986b3d3f5 | Container (hash taken after this run's annotation) |
 | Dockerfile | 1eee44f349f32756 | Container + IaC Inventory |
 | docker-compose.yml | c613576647ecca9f | Container + IaC Inventory |
 | docker/odoo.conf | 941e8e4a7683adeb | Container + IaC Inventory |

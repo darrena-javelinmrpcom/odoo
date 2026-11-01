@@ -166,7 +166,7 @@ This file (`techContext.md`) remains the canonical source for:
 
 The Container-level C4 doc summarizes deployment topology and references this file for tech versions — it does not duplicate them.
 
-**Last refreshed**: 2026-10-31T12:00:00Z
+**Last refreshed**: 2026-11-01T11:22:58Z
 **Plugin version**: 2.2.1
 
 <!-- AUTO-MANAGED: c4-references-end -->

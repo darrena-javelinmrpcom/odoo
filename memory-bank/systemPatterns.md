@@ -177,7 +177,7 @@ This project's architecture is documented at four progressively zoomed-in C4 lev
 
 It only re-walks subtrees whose source-directory hashes have changed.
 
-**Last refreshed**: 2026-10-31T12:00:00Z
+**Last refreshed**: 2026-11-01T11:22:58Z
 **Plugin version**: 2.2.1
 
 <!-- AUTO-MANAGED: c4-architecture-end -->
