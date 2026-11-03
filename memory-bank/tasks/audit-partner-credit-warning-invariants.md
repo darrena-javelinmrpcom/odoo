@@ -31,7 +31,9 @@ developer.
 - This is an analysis-only deliverable, with no code changes. The fast-path TDD agent and affected-test run
   were not applicable and were skipped.
 - Deliverable: `memory-bank/creative/audit-partner-credit-warning-invariants-knowledge-archaeology.md`
-  (invariants across 10 categories, 12 calibration items, 6 latent defects, and 12 proposed ENFORCED entries).
+  (invariants across 10 categories, 15 calibration items, 10 latent defects, and 12 proposed ENFORCED entries).
+- Rev 2 (2026-11-03): each ENFORCED entry was verified at code level by a dedicated sub-agent (12/12 upheld,
+  0 refuted). Corrections were applied throughout and verification results recorded in §5 of the audit doc.
 - The proposed `systemPatterns.md` entries are **not applied**. That file is Core State and must go through
   `chore/banyan-admin`.
 
