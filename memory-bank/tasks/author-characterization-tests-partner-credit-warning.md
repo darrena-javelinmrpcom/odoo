@@ -2,13 +2,13 @@
 slug: author-characterization-tests-partner-credit-warning
 legacy_id:
 feature:
-status: INITIALIZED
+status: BUILD_COMPLETE
 ---
 
 # author-characterization-tests-partner-credit-warning: Characterization tests for sale.order._compute_partner_credit_warning
 
 **Complexity**: Level 1
-**Status**: INITIALIZED
+**Status**: BUILD_COMPLETE
 **Roadmap**: N/A
 **Branch**: task/author-characterization-tests-partner-credit-warning
 **Worktree**: N/A (Level 1 uses direct branch, not worktree)
@@ -66,8 +66,8 @@ what it currently returns for each one, byte-for-byte. Do NOT assert what it SHO
 
 ## Execution State
 
-**Build Status**: IDLE
-**Current Phase**: PART1_COMPLETE
+**Build Status**: BUILD_COMPLETE
+**Current Phase**: PART2_COMPLETE
 **Can Resume**: YES
 
 ### Active Sub-Agents
@@ -75,3 +75,4 @@ what it currently returns for each one, byte-for-byte. Do NOT assert what it SHO
 
 ### Completed Steps
 - Part 1 (test addon harness): BUILD_COMPLETE. `custom_addons/banyan_sale_safety` created; installs on `odoo-test`; tag selector `characterization/banyan_sale_safety` runs 1 smoke test (`test_harness_lang_locked`), 0 failed, 0 errors. Next: Part 2 (characterization test methods).
+- Part 2 (characterization tests): BUILD_COMPLETE. Branches A-M all covered (13 tests + smoke test), all reachable; 0 failed, 0 errors on two consecutive runs. Notes (recorded, not fixed): A/B/C/D/E/F capture `''`; A/B short-circuit in the sale.order compute (never reach `_build_credit_warning_message`); `with_company` on line 773 is a no-op; child contact (K) uses commercial partner's name and limit, ignoring the child's own limit.
