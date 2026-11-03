@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xfonts-75dpi \
     xfonts-base \
     fontconfig \
+    chromium \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g rtlcss
 
@@ -25,7 +26,8 @@ WORKDIR /opt/odoo
 # ── Install Python dependencies from the repo's own requirements.txt ──
 COPY requirements.txt .
 RUN pip install --no-cache-dir setuptools wheel \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir websocket-client
 
 # ── Copy the full source tree ──
 COPY . .
