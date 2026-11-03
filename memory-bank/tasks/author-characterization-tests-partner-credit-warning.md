@@ -12,6 +12,7 @@ status: COMPLETE
 **Reflection**: memory-bank/reflection/author-characterization-tests-partner-credit-warning-reflection.md
 **Archived**: memory-bank/archive/author-characterization-tests-partner-credit-warning-archive.md
 **Completed**: 2026-11-03
+**PR**: https://github.com/darrena-javelinmrpcom/odoo/pull/3
 **Latest Commit**: 14dedad8
 **Roadmap**: N/A
 **Branch**: task/author-characterization-tests-partner-credit-warning
