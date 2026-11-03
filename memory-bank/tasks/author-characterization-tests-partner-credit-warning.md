@@ -30,6 +30,17 @@ what it currently returns for each one, byte-for-byte. Do NOT assert what it SHO
 ### Part 1: Set up the test addon
 `custom_addons/banyan_sale_safety/` with `tests/`: empty harness, `characterization` tag, install.
 
+### Part 2: Characterization tests
+One test per branch A-M (state sale/cancel over limit, flag off, no limit, below, equal,
+the four "Total amount due" variants, commercial partner, sent, foreign currency). Full-string
+`assertEqual` literals captured from the actual failure diff; `\xa0` and `\n` as escapes.
+
+### Part 3: Prove the safety net (mutation check, never committed)
+Change `addons/sale/models/sale_order.py:775` from `order.state in ('draft', 'sent')` to
+`order.state in ('draft', 'sent', 'sale')`, copy into the container, run: test A must fail
+with a full-string diff and all others pass. Revert with `git checkout`, copy back, re-run
+green, confirm `addons/` is clean.
+
 ## Implementation Notes
 
 - Path deviation from original brief: `custom_addons/` (custom addons convention, on
@@ -67,7 +78,7 @@ what it currently returns for each one, byte-for-byte. Do NOT assert what it SHO
 ## Execution State
 
 **Build Status**: BUILD_COMPLETE
-**Current Phase**: PART2_COMPLETE
+**Current Phase**: PART3_COMPLETE
 **Can Resume**: YES
 
 ### Active Sub-Agents
@@ -76,3 +87,4 @@ what it currently returns for each one, byte-for-byte. Do NOT assert what it SHO
 ### Completed Steps
 - Part 1 (test addon harness): BUILD_COMPLETE. `custom_addons/banyan_sale_safety` created; installs on `odoo-test`; tag selector `characterization/banyan_sale_safety` runs 1 smoke test (`test_harness_lang_locked`), 0 failed, 0 errors. Next: Part 2 (characterization test methods).
 - Part 2 (characterization tests): BUILD_COMPLETE. Branches A-M all covered (13 tests + smoke test), all reachable; 0 failed, 0 errors on two consecutive runs. Notes (recorded, not fixed): A/B/C/D/E/F capture `''`; A/B short-circuit in the sale.order compute (never reach `_build_credit_warning_message`); `with_company` on line 773 is a no-op; child contact (K) uses commercial partner's name and limit, ignoring the child's own limit.
+- Part 3 (mutation check): PASS. With `'sale'` added to the state tuple at `sale_order.py:775`, the suite reported `1 failed, 0 error(s) of 14 tests`; only `test_branch_a_state_sale_returns_empty` failed, with actual `'Charact Partner has reached its credit limit of: $\xa01,000.00\nTotal amount due (including sales orders and this document): $\xa03,000.00'`. The total is 3,000 because a confirmed order counts twice (`credit_to_invoice` + `current_amount`). After the revert: `0 failed, 0 error(s) of 14 tests`; `git status` clean, core change never committed. All DONE WHEN criteria met. Next: `/bmb:archive author-characterization-tests-partner-credit-warning`.
