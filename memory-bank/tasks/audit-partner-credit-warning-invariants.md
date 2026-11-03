@@ -13,6 +13,8 @@ status: COMPLETE
 **Completed**: 2026-11-03
 **Reflection**: memory-bank/reflection/audit-partner-credit-warning-invariants-reflection.md
 **Latest Commit**: b1fd7e27 (reflection)
+**PR Created**: YES
+**PR URL**: https://github.com/darrena-javelinmrpcom/odoo/pull/2
 **Roadmap**: N/A
 **Branch**: task/audit-partner-credit-warning-invariants
 **Worktree**: N/A (Level 1 uses direct branch, not worktree)
