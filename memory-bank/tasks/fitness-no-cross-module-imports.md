@@ -2,13 +2,16 @@
 slug: fitness-no-cross-module-imports
 legacy_id:
 feature:
-status: REFLECTION_COMPLETE
+status: COMPLETE
 ---
 
 # fitness-no-cross-module-imports: Fitness function for module isolation
 
 **Complexity**: Level 1
-**Status**: REFLECTION_COMPLETE
+**Status**: COMPLETE
+**Archived**: memory-bank/archive/fitness-no-cross-module-imports-archive.md
+**Completed**: 2026-11-03
+**Latest Commit**: d4295c54
 **Reflection**: memory-bank/reflection/fitness-no-cross-module-imports-reflection.md
 **Roadmap**: N/A
 **Branch**: task/fitness-no-cross-module-imports
@@ -64,8 +67,8 @@ Demonstrate the catch with a temporary scratch violation, then remove it (slide 
 ## Execution State
 
 **Build Status**: IDLE
-**Current Phase**: REFLECT → ARCHIVE
-**Current Step**: Step 4 - Git Commit - COMPLETE
+**Current Phase**: COMPLETE
+**Current Step**: Archive - COMPLETE
 **Step Started**: 2026-11-03
 **Can Resume**: NO
 
@@ -80,3 +83,4 @@ Demonstrate the catch with a temporary scratch violation, then remove it (slide 
 - Re-validation after gap fixes (fresh sparse worktrees): C evasion PASS (cases 1-11 all caught, benign file clean; 14 of 28 extra agent-invented variants missed: plausible = `getattr(odoo.addons, x)`, `sys.modules['odoo.addons.x']`, assigned alias `im = importlib.import_module`, load-by-path `spec_from_file_location`; rest deliberate obfuscation; text pre-filter bypassable by escapes like `\x61ddons`, so its "cannot contain a violation" docstring claim is false). E allow-list PASS on R1-R4 + 39 unit tests; new defects D1 (missing default .allow silently ignored), D2 (non-UTF-8 allow file -> traceback, exit 1 instead of 2), D3 (argparse errors with --format json leave stdout empty); weak: punctuation-only comment counts as justification. These are KNOWN OPEN follow-ups, not fixed in this task.
 - Prerequisites verified for REFLECT (Level 1, no multi-phase roadmap; status BUILD_COMPLETE; branch not behind origin/banyan).
 - Reflection Agent: COMPLETE (2026-11-03) - Output: memory-bank/reflection/fitness-no-cross-module-imports-reflection.md (Task Quality: Good; Ecosystem: Moderately effective)
+- Archive: COMPLETE (2026-11-03) - memory-bank/archive/fitness-no-cross-module-imports-archive.md; learned rules added: _learned/fitness-functions.md, _learned/git-worktrees.md (additive, no merges/retirements)
