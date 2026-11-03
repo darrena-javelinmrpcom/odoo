@@ -18,6 +18,21 @@ Odoo **18.0 Community** (LGPL-3) fork. 621 addon directories under `addons/`; fr
 | License | `'license': 'LGPL-3'` in each manifest; "Part of Odoo" header. |
 | Tests ship with the module | `tests/` (Python), `static/tests/` (Hoot unit tests + tours). |
 
+### Fitness Functions (executable principles)
+
+A principle marked **ENFORCED** has a script that the Code Reviewer runs on every build; a
+non-zero exit is a BLOCKING finding. A prose-only principle is a convention, not a contract.
+Wiring: `memory-bank/agent-rules/odoo-fitness.md`.
+
+| Principle | Status | Executable check |
+|---|---|---|
+| **Module isolation**: a custom addon (`custom_addons/*/`) never imports another addon's Python modules. Use `self.env['model.name']`. | **ENFORCED** | `python scripts/fitness/no-cross-module-imports.py custom_addons/` (exit 0 clean / 1 violations / 2 usage error; `--format json` for machine output). Catches import statements at any nesting, `odoo.addons.<x>` attribute access via `import odoo` / `from odoo import addons`, and `importlib.import_module` / `__import__` (literal names; computed names are flagged `MODULE-ISOLATION-DYNAMIC`). Allow-list: `scripts/fitness/no-cross-module-imports.allow` (always loaded; extra sources add to it). Every rule needs a justification comment, and allow-listed imports are still reported as `ALLOWED`. Default rule `tests/**: odoo.addons.*.tests.common` (test fixtures). |
+| **ORM-first**: no raw `self.env.cr.execute(` in custom addons outside a reporting allow-list. | Planned (not enforced) | To build: `scripts/fitness/no-raw-sql.py`. |
+| **`_inherit` only**: a custom addon never redefines a core model with `_name = '<core model>'` (e.g. `'sale.order'`). | Planned (not enforced) | To build: `scripts/fitness/inherit-only.py`. |
+
+Changing an ENFORCED constraint means changing its script (and allow-list) in the same PR.
+Do not suppress a violation by editing the allow-list without reviewer sign-off.
+
 ## Architecture Overview
 
 - **Entry point**: `odoo-bin` → `odoo.cli.main()` (`odoo/cli/command.py`). Subcommands in `odoo/cli/`: `server` (default), `shell`, `scaffold`, `db`, `populate`, `neutralize`, `obfuscate`, `upgrade_code`, `cloc`, `start`, `deploy`, `tsconfig`.
