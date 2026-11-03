@@ -16,6 +16,13 @@ Notes on observed behaviour (recorded, not fixed):
   the amount; it is written as an explicit escape in the literals below.
 * Branches A/B (state 'sale' / 'cancel') short-circuit in the sale.order
   compute and never reach ``_build_credit_warning_message``.
+
+Baseline review (three-tag rubric). Each test carries one ``# REVIEW:`` tag:
+* ``correct``       - matches documented intent (field help / business rules).
+* ``bug-preserved`` - captures a real defect; locked only as a guardrail.
+* ``unclear``       - cannot be decided from code/docs alone; needs PM decision.
+Full rationale: memory-bank/creative/
+author-characterization-tests-partner-credit-warning-baseline-review.md
 """
 from odoo.fields import Command
 from odoo.tests import TransactionCase, tagged
@@ -23,6 +30,8 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged('post_install', '-at_install', 'characterization')
 class TestPartnerCreditWarningCharacterization(TransactionCase):
+    """Lock current behavior. A failing test means behavior CHANGED -
+    investigate before accepting the change."""
 
     @classmethod
     def setUpClass(cls):
@@ -85,36 +94,49 @@ class TestPartnerCreditWarningCharacterization(TransactionCase):
         self.assertEqual(self.env.context.get('lang'), 'en_US')
 
     def test_branch_a_state_sale_returns_empty(self):
+        # REVIEW: unclear - a salesperson editing an over-limit CONFIRMED order
+        # sees no warning. Needs PM decision. If enabled naively (mutation
+        # check), the order counts twice (credit_to_invoice + current_amount).
         order = self._make_order(self.partner, 1500.0)
         order.action_confirm()
         self.assertEqual(order.state, 'sale')
         self.assertEqual(order.partner_credit_warning, '')
 
     def test_branch_b_state_cancel_returns_empty(self):
+        # REVIEW: correct - a cancelled order creates no credit exposure.
         order = self._make_order(self.partner, 1500.0)
         order._action_cancel()
         self.assertEqual(order.state, 'cancel')
         self.assertEqual(order.partner_credit_warning, '')
 
     def test_branch_c_company_flag_off_over_limit(self):
+        # REVIEW: correct - account_use_credit_limit help: "Enable the use of
+        # credit limit on partners." Off means no checks.
         self.company.account_use_credit_limit = False
         order = self._make_order(self.partner, 1500.0)
         self.assertEqual(order.partner_credit_warning, '')
 
     def test_branch_d_flag_on_no_credit_limit(self):
+        # REVIEW: correct - use_partner_credit_limit help: "Set a value greater
+        # than 0.0 to activate a credit limit check." 0 means no limit.
         partner = self._make_partner('Charact No Limit', credit_limit=0.0)
         order = self._make_order(partner, 1500.0)
         self.assertEqual(order.partner_credit_warning, '')
 
     def test_branch_e_flag_on_below_limit(self):
+        # REVIEW: correct - under the limit, nothing to warn about.
         order = self._make_order(self.partner, 999.0)
         self.assertEqual(order.partner_credit_warning, '')
 
     def test_branch_f_boundary_total_equals_limit(self):
+        # REVIEW: unclear - `total_credit <= credit_limit` means a partner
+        # exactly AT the limit gets no warning, yet the message text says
+        # "has reached its credit limit". Needs PM decision: reached or exceeded?
         order = self._make_order(self.partner, 1000.0)
         self.assertEqual(order.partner_credit_warning, '')
 
     def test_branch_g_over_limit_only_this_draft_order(self):
+        # REVIEW: correct - exposure = credit + credit_to_invoice + this order.
         order = self._make_order(self.partner, 1500.0)
         self.assertEqual(order.state, 'draft')
         self.assertEqual(order.partner_credit_warning, (
@@ -123,6 +145,7 @@ class TestPartnerCreditWarningCharacterization(TransactionCase):
         ))
 
     def test_branch_h_other_confirmed_so_plus_this_document(self):
+        # REVIEW: correct - uninvoiced confirmed orders count toward exposure.
         partner = self._make_partner('Charact H', credit_limit=1000.0)
         other = self._make_order(partner, 800.0)
         other.action_confirm()
@@ -135,6 +158,8 @@ class TestPartnerCreditWarningCharacterization(TransactionCase):
         ))
 
     def test_branch_i_credit_to_invoice_only_current_amount_zero(self):
+        # REVIEW: correct - already over limit from other orders; warns even on
+        # a zero-value quotation.
         partner = self._make_partner('Charact I', credit_limit=1000.0)
         other = self._make_order(partner, 1500.0)
         other.action_confirm()
@@ -147,6 +172,7 @@ class TestPartnerCreditWarningCharacterization(TransactionCase):
         ))
 
     def test_branch_j_posted_invoice_only_current_amount_zero(self):
+        # REVIEW: correct - posted unpaid receivables count toward exposure.
         partner = self._make_partner('Charact J', credit_limit=1000.0)
         self._post_invoice(partner, 1500.0)
         self.assertEqual(partner.credit, 1500.0)
@@ -163,6 +189,8 @@ class TestPartnerCreditWarningCharacterization(TransactionCase):
         child = self._make_partner(
             'Charact Child Contact', credit_limit=0.0,
             parent_id=parent.id, type='contact')
+        # REVIEW: correct - receivables and credit are tracked on the commercial
+        # entity, so the parent's name and limit apply.
         # Captured: the parent's name AND limit are used (child limit 0 ignored).
         order = self._make_order(child, 1500.0)
         self.assertEqual(order.partner_credit_warning, (
@@ -171,6 +199,7 @@ class TestPartnerCreditWarningCharacterization(TransactionCase):
         ))
 
     def test_branch_l_state_sent_over_limit(self):
+        # REVIEW: correct - a sent quotation is still pre-confirmation.
         order = self._make_order(self.partner, 1500.0)
         order.action_quotation_sent()
         self.assertEqual(order.state, 'sent')
@@ -180,6 +209,9 @@ class TestPartnerCreditWarningCharacterization(TransactionCase):
         ))
 
     def test_branch_m_foreign_currency_non_unit_rate(self):
+        # REVIEW: bug-preserved - the warning is always in company_id.currency_id,
+        # never the order currency: a TB 2,400 quotation shows "$ 1,200.00".
+        # Locked as a guardrail; follow-up TASK-FUTURE-CREDIT-CURRENCY.
         currency = self.env['res.currency'].create({
             'name': 'TB', 'symbol': 'TB', 'rounding': 0.01})
         self.env['res.currency.rate'].create({
