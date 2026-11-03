@@ -7,6 +7,10 @@ _build/
 !.github
 !.mailmap
 !.weblate.json
+# project-local Claude Code skills are shared; the rest of .claude/ stays local
+!.claude/
+.claude/*
+!.claude/skills/
 # compiled python files
 *.py[co]
 __pycache__/
