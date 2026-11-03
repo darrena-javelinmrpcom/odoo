@@ -7,6 +7,13 @@
 #   module-glob fnmatch pattern vs the imported dotted module; a rule also
 #               covers submodules (odoo.addons.sale.tests.common.x).
 # A rule without ':' is a module-glob that applies to every path.
+# Runtime-computed imports (importlib/__import__ with a non-literal name)
+# match the module name '<dynamic>'.
+#
+# EVERY rule needs a justification: a non-empty comment inline
+# ('<rule>  # why') or on the line directly above (no blank line between).
+# A rule without one is a usage error (exit 2). Allow-listed imports are
+# still reported as ALLOWED lines; they never pass silently.
 #
 # Tests may reuse another addon's test fixtures (standard Odoo practice).
 tests/**: odoo.addons.*.tests.common

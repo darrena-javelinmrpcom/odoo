@@ -26,7 +26,7 @@ Wiring: `memory-bank/agent-rules/odoo-fitness.md`.
 
 | Principle | Status | Executable check |
 |---|---|---|
-| **Module isolation**: a custom addon (`custom_addons/*/`) never imports another addon's Python modules. Use `self.env['model.name']`. | **ENFORCED** | `python scripts/fitness/no-cross-module-imports.py custom_addons/` (exit 0 clean / 1 violations / 2 usage error). Allow-list: `scripts/fitness/no-cross-module-imports.allow`; default rule `tests/**: odoo.addons.*.tests.common` (test fixtures). |
+| **Module isolation**: a custom addon (`custom_addons/*/`) never imports another addon's Python modules. Use `self.env['model.name']`. | **ENFORCED** | `python scripts/fitness/no-cross-module-imports.py custom_addons/` (exit 0 clean / 1 violations / 2 usage error; `--format json` for machine output). Catches import statements at any nesting, `odoo.addons.<x>` attribute access via `import odoo` / `from odoo import addons`, and `importlib.import_module` / `__import__` (literal names; computed names are flagged `MODULE-ISOLATION-DYNAMIC`). Allow-list: `scripts/fitness/no-cross-module-imports.allow` (always loaded; extra sources add to it). Every rule needs a justification comment, and allow-listed imports are still reported as `ALLOWED`. Default rule `tests/**: odoo.addons.*.tests.common` (test fixtures). |
 | **ORM-first**: no raw `self.env.cr.execute(` in custom addons outside a reporting allow-list. | Planned (not enforced) | To build: `scripts/fitness/no-raw-sql.py`. |
 | **`_inherit` only**: a custom addon never redefines a core model with `_name = '<core model>'` (e.g. `'sale.order'`). | Planned (not enforced) | To build: `scripts/fitness/inherit-only.py`. |
 

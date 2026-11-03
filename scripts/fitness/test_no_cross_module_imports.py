@@ -154,7 +154,8 @@ class TestAllowListConfig(FixtureCase):
         a = self.addon("mine")
         self.write(a, "models/m.py", "from odoo.addons.sale.models.x import Y\n")
         allow = self.root / "custom.allow"
-        allow.write_text("# comment\n\nmodels/**: odoo.addons.sale.models.*\n")
+        allow.write_text("# header\n\n# legacy bridge, ticket 42\n"
+                         "models/**: odoo.addons.sale.models.*\n")
         proc = self.run_cli(a, env_allow=allow)
         self.assertEqual(proc.returncode, 0, proc.stdout)
 
@@ -164,10 +165,10 @@ class TestAllowListConfig(FixtureCase):
             "from odoo.addons.sale.models.x import Y\n"
             "from odoo.addons.stock.models.x import Z\n"
         ))
-        proc = self.run_cli(a, "--allow", "models/**: odoo.addons.sale.*",
-                            "--allow", "models/**: odoo.addons.stock.*")
+        proc = self.run_cli(a, "--allow", "models/**: odoo.addons.sale.*  # why",
+                            "--allow", "models/**: odoo.addons.stock.*  # why")
         self.assertEqual(proc.returncode, 0, proc.stdout)
-        proc = self.run_cli(a, "--allow", "models/**: odoo.addons.sale.*")
+        proc = self.run_cli(a, "--allow", "models/**: odoo.addons.sale.*  # why")
         self.assertEqual(proc.returncode, 1)
         self.assertEqual(len(self.violation_lines(proc)), 1)
 
@@ -222,6 +223,196 @@ class TestUnitFunctions(FixtureCase):
         found = mod.scan_file(f, a, "mine", [])
         self.assertEqual([v.target for v in found], ["sale", "stock"])
         self.assertTrue(all(v.line == 1 for v in found))
+
+
+class TestEvasionForms(FixtureCase):
+    """Gaps 1-2: routes to another addon that are not import statements."""
+
+    def flagged(self, source, tag="MODULE-ISOLATION "):
+        a = self.addon("mine")
+        self.write(a, "models/m.py", source)
+        proc = self.run_cli(a)
+        lines = [ln for ln in self.violation_lines(proc) if tag in ln]
+        return proc, lines
+
+    def assert_caught(self, source, line_no, tag="MODULE-ISOLATION "):
+        proc, lines = self.flagged(source, tag)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertEqual(len(lines), 1, proc.stdout)
+        self.assertIn("m.py:%d:" % line_no, lines[0])
+        return lines[0]
+
+    def test_from_odoo_import_addons_attribute(self):
+        line = self.assert_caught(
+            "from odoo import addons\n"
+            "X = addons.sale.models.sale_order.SaleOrder\n", 2)
+        self.assertIn("mine imports sale via 'addons.sale.models.sale_order.SaleOrder'", line)
+
+    def test_import_odoo_attribute(self):
+        self.assert_caught("import odoo\nX = odoo.addons.sale.models.x\n", 2)
+
+    def test_aliased_addons_package(self):
+        self.assert_caught("import odoo.addons as oa\nX = oa.sale.models\n", 2)
+
+    def test_importlib_literal(self):
+        line = self.assert_caught(
+            "import importlib\nm = importlib.import_module('odoo.addons.sale.models')\n", 2)
+        self.assertIn("mine imports sale", line)
+
+    def test_from_importlib_import_module_alias(self):
+        self.assert_caught(
+            "from importlib import import_module as im\nm = im('odoo.addons.sale')\n", 2)
+
+    def test_dunder_import_literal(self):
+        self.assert_caught("m = __import__('odoo.addons.sale')\n", 1)
+
+    def test_folded_string_concatenation(self):
+        self.assert_caught(
+            "import importlib\nm = importlib.import_module('odoo.' + 'addons.sale')\n", 2)
+
+    def test_computed_name_flagged_dynamic(self):
+        line = self.assert_caught(
+            "import importlib\nn = 'x'\nm = importlib.import_module(n)\n", 3,
+            tag="MODULE-ISOLATION-DYNAMIC")
+        self.assertIn("<dynamic>", line)
+
+    def test_dynamic_can_be_allow_listed(self):
+        a = self.addon("mine")
+        self.write(a, "models/m.py", "import importlib\nm = importlib.import_module(n)\n")
+        proc = self.run_cli(a, "--allow", "models/m.py: <dynamic>  # plugin loader")
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn("ALLOWED", proc.stdout)
+
+    def test_no_false_positives_for_benign_forms(self):
+        a = self.addon("mine")
+        self.write(a, "models/m.py", (
+            "import importlib\nimport odoo\nfrom odoo import addons\n"
+            "from odoo.tools import float_compare\n"
+            "a = importlib.import_module('json')\n"
+            "b = importlib.import_module('.sibling', __package__)\n"
+            "c = __import__('os')\n"
+            "c2 = __import__('region_%s' % n, globals(), locals(), ['X'], 1)\n"
+            "c3 = __import__(n, level=1)\n"
+            "d = odoo.tools.float_compare\n"
+            "e = addons.mine.models\n"
+            "f = addons.__path__\n"
+            "g = self_env = 'odoo.addons.sale'\n"
+        ))
+        proc = self.run_cli(a)
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+
+    def test_prefilter_does_not_skip_split_strings(self):
+        # no 'odoo.addons' substring anywhere in the file
+        self.assert_caught(
+            "from importlib import import_module\nimport_module('odoo.' 'addons.sale')\n", 2)
+
+
+class TestAllowListReportingAndJustification(FixtureCase):
+    """Gaps 3, 4 and 6."""
+
+    def setup_violation(self):
+        a = self.addon("mine")
+        self.write(a, "models/m.py", "from odoo.addons.sale.models import x\n")
+        return a
+
+    def test_allowed_import_is_reported_with_rule_and_reason(self):
+        a = self.setup_violation()
+        proc = self.run_cli(a, "--allow", "models/m.py: odoo.addons.sale.*  # bridge, T-42")
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        allowed = [ln for ln in proc.stdout.splitlines() if " ALLOWED " in ln]
+        self.assertEqual(len(allowed), 1, proc.stdout)
+        self.assertIn("models/m.py:1:", allowed[0])
+        self.assertIn("bridge, T-42", allowed[0])
+        self.assertIn("0 violation(s) in 2 file(s) scanned; 1 allowed", proc.stdout)
+
+    def test_file_rule_without_justification_is_usage_error(self):
+        a = self.setup_violation()
+        allow = self.root / "bad.allow"
+        allow.write_text("# a reason that is separated by a blank line\n\n"
+                         "models/**: odoo.addons.sale.*\n")
+        proc = self.run_cli(a, env_allow=allow)
+        self.assertEqual(proc.returncode, 2, proc.stdout)
+        self.assertIn("justification", proc.stderr)
+        self.assertIn("bad.allow:3", proc.stderr)
+
+    def test_empty_comment_is_not_a_justification(self):
+        a = self.setup_violation()
+        allow = self.root / "bad.allow"
+        allow.write_text("#\nmodels/**: odoo.addons.sale.*   #   \n")
+        proc = self.run_cli(a, env_allow=allow)
+        self.assertEqual(proc.returncode, 2, proc.stdout)
+
+    def test_inline_justification_accepted(self):
+        a = self.setup_violation()
+        allow = self.root / "ok.allow"
+        allow.write_text("models/**: odoo.addons.sale.*  # bridge\n")
+        proc = self.run_cli(a, env_allow=allow)
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+
+    def test_cli_rule_without_justification_is_usage_error(self):
+        a = self.setup_violation()
+        proc = self.run_cli(a, "--allow", "models/**: odoo.addons.sale.*")
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("justification", proc.stderr)
+
+    def test_extra_allow_sources_add_to_default(self):
+        # Gap 6: env / --allow-file must not drop the default tests/** rule
+        a = self.addon("mine")
+        self.write(a, "tests/test_a.py",
+                   "from odoo.addons.sale.tests.common import TestSaleCommon\n")
+        self.write(a, "models/m.py", "from odoo.addons.sale.models import x\n")
+        extra = self.root / "extra.allow"
+        extra.write_text("models/**: odoo.addons.sale.models  # bridge\n")
+        for args, env in (((), extra), (("--allow-file", extra), None)):
+            proc = self.run_cli(a, *args, env_allow=env)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("; 2 allowed", proc.stdout)
+
+    def test_no_default_allow_drops_default(self):
+        a = self.addon("mine")
+        self.write(a, "tests/test_a.py",
+                   "from odoo.addons.sale.tests.common import TestSaleCommon\n")
+        proc = self.run_cli(a, "--no-default-allow", env_allow=None)
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+
+    def test_default_allow_file_is_valid(self):
+        mod = load_module()
+        rules = mod.load_rules_file(mod.DEFAULT_ALLOW_FILE)
+        self.assertTrue(rules)
+        self.assertTrue(all(r.justification for r in rules))
+
+
+class TestJsonOutput(FixtureCase):
+    """Gap 5."""
+
+    def test_json_violations_and_allowed(self):
+        import json
+        a = self.addon("mine")
+        self.write(a, "models/m.py", (
+            "from odoo.addons.sale.models import x\n"
+            "from odoo.addons.stock.models import y\n"
+        ))
+        proc = self.run_cli(a, "--format", "json",
+                            "--allow", "models/**: odoo.addons.stock.*  # bridge")
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        data = json.loads(proc.stdout)
+        self.assertEqual(data["exit_code"], 1)
+        self.assertEqual(data["files_scanned"], 2)
+        self.assertEqual([(v["target"], v["line"], v["kind"]) for v in data["violations"]],
+                         [("sale", 1, "import")])
+        self.assertEqual(data["allowed"][0]["target"], "stock")
+        self.assertEqual(data["allowed"][0]["justification"], "bridge")
+        self.assertTrue(data["violations"][0]["path"].endswith("mine/models/m.py"))
+
+    def test_json_clean_and_usage_error(self):
+        import json
+        a = self.addon("mine")
+        proc = self.run_cli(a, "--format", "json")
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(json.loads(proc.stdout)["violations"], [])
+        proc = self.run_cli(self.root / "nope", "--format", "json")
+        self.assertEqual(proc.returncode, 2)
+        self.assertEqual(json.loads(proc.stdout)["exit_code"], 2)
 
 
 if __name__ == "__main__":

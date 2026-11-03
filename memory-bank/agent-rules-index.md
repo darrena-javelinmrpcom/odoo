@@ -24,7 +24,7 @@ Indexed: 3 rules (1 human-authored, 2 learned) | Rejected: 0 (unsafe) | Warnings
 
 | Pattern | Rule | Priority | Lines |
 |---------|------|----------|-------|
-| `custom_addons/**/*.py` | [odoo-fitness.md](agent-rules/odoo-fitness.md) | high | 38 |
+| `custom_addons/**/*.py` | [odoo-fitness.md](agent-rules/odoo-fitness.md) | high | 46 |
 | `custom_addons/**/*.py` | [odoo-compute-fields.md](agent-rules/_learned/odoo-compute-fields.md) (learned) | low | 16 |
 | `**/tests/tours/*.js` | [e2e-testing.md](agent-rules/_learned/e2e-testing.md) (learned) | low | 16 |
 | `**/tests/test_*e2e*.py` | [e2e-testing.md](agent-rules/_learned/e2e-testing.md) (learned) | low | 16 |
@@ -34,8 +34,8 @@ Indexed: 3 rules (1 human-authored, 2 learned) | Rejected: 0 (unsafe) | Warnings
 
 | Path Contains | Rule | Priority | Lines |
 |---------------|------|----------|-------|
-| `custom_addons/` | [odoo-fitness.md](agent-rules/odoo-fitness.md) | high | 38 |
-| `scripts/fitness/` | [odoo-fitness.md](agent-rules/odoo-fitness.md) | high | 38 |
+| `custom_addons/` | [odoo-fitness.md](agent-rules/odoo-fitness.md) | high | 46 |
+| `scripts/fitness/` | [odoo-fitness.md](agent-rules/odoo-fitness.md) | high | 46 |
 | `custom_addons/` | [odoo-compute-fields.md](agent-rules/_learned/odoo-compute-fields.md) (learned) | low | 16 |
 | `custom_addons/` | [e2e-testing.md](agent-rules/_learned/e2e-testing.md) (learned) | low | 16 |
 
