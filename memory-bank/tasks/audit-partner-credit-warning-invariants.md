@@ -2,13 +2,15 @@
 slug: audit-partner-credit-warning-invariants
 legacy_id:
 feature:
-status: BUILD_COMPLETE
+status: REFLECTION_COMPLETE
 ---
 
 # audit-partner-credit-warning-invariants: Knowledge-archaeology audit of the partner credit warning
 
 **Complexity**: Level 1
-**Status**: BUILD_COMPLETE
+**Status**: REFLECTION_COMPLETE
+**Reflection**: memory-bank/reflection/audit-partner-credit-warning-invariants-reflection.md
+**Latest Commit**: 914f0fed (audit rev 2; reflection commit follows)
 **Roadmap**: N/A
 **Branch**: task/audit-partner-credit-warning-invariants
 **Worktree**: N/A (Level 1 uses direct branch, not worktree)
@@ -41,8 +43,9 @@ developer.
 
 ## Execution State
 
-**Build Status**: COMPLETE
-**Current Phase**: BUILD_COMPLETE
+**Build Status**: IDLE
+**Current Phase**: REFLECT → ARCHIVE
+**Current Step**: Step 4 - Git Commit - COMPLETE
 **Can Resume**: NO
 
 ### Active Sub-Agents
@@ -52,4 +55,6 @@ developer.
 - Discovery + clean-tree gate (clean)
 - Branch `task/audit-partner-credit-warning-invariants` cut from `origin/banyan`
 - Source audit (subjects + partner/sale/account/view/translate/fields/test/custom-addon call sites)
-- Audit document written
+- Audit document written (rev 1, 80401fbb)
+- Code-level verification of ENFORCED entries; rev 2 corrections applied (914f0fed)
+- Reflection Agent: COMPLETE (2026-11-03) - Output: memory-bank/reflection/audit-partner-credit-warning-invariants-reflection.md
