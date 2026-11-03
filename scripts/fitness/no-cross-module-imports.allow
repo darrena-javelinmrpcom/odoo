@@ -1,0 +1,12 @@
+# Allow-list for scripts/fitness/no-cross-module-imports.py
+#
+# Format (one rule per line, '#' starts a comment):
+#     <path-glob>: <module-glob>
+#   path-glob   fnmatch pattern vs the file path relative to its addon root
+#               (posix separators; '*' also matches '/').
+#   module-glob fnmatch pattern vs the imported dotted module; a rule also
+#               covers submodules (odoo.addons.sale.tests.common.x).
+# A rule without ':' is a module-glob that applies to every path.
+#
+# Tests may reuse another addon's test fixtures (standard Odoo practice).
+tests/**: odoo.addons.*.tests.common

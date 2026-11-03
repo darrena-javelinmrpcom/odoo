@@ -2,13 +2,13 @@
 slug: fitness-no-cross-module-imports
 legacy_id:
 feature:
-status: INITIALIZED
+status: BUILD_COMPLETE
 ---
 
 # fitness-no-cross-module-imports: Fitness function for module isolation
 
 **Complexity**: Level 1
-**Status**: INITIALIZED
+**Status**: BUILD_COMPLETE
 **Roadmap**: N/A
 **Branch**: task/fitness-no-cross-module-imports
 **Worktree**: N/A (Level 1 uses direct branch, not worktree)
@@ -62,12 +62,13 @@ Demonstrate the catch with a temporary scratch violation, then remove it (slide 
 
 ## Execution State
 
-**Build Status**: IDLE
-**Current Phase**: INITIALIZED
+**Build Status**: BUILD_COMPLETE
+**Current Phase**: BUILD_COMPLETE
 **Can Resume**: NO
 
 ### Active Sub-Agents
 (none)
 
 ### Completed Steps
-(none)
+- RED then GREEN: scripts/fitness/test_no_cross_module_imports.py, 18 tests, all passing; script scripts/fitness/no-cross-module-imports.py + .allow file created.
+- Run a (custom_addons/): exit 0, 0 violations in 7 files. Run b (addons/, comparison): exit 1, 1108 violations in 7512 files (~19s). Run c (scratch violation in sale_credit_limit_warning/models): exit 1 with exactly 1 violation; after deleting scratch file: exit 0.
